@@ -1,10 +1,10 @@
 //IMAGE PARAMS
 #define IMXSIZE 80
 #define IMYSIZE 125 
-#define XCTRLSTART 45
-#define XCTRLEND 70
-#define YCTRLSTART 40
-#define YCTRLEND 80
+#define XCTRLSTART 40
+#define XCTRLEND 79
+#define YCTRLSTART 0
+#define YCTRLEND 120
 #define CENTERX 40
 #define CENTERY 60
 #define LAMBDAOVERD 2
@@ -18,3 +18,4 @@
 #define MAXSPECKLES 16
 #define SPECKLEWINDOW 8
 #define EXCLUSIONZONE 8
+#define NPHASES 4

@@ -1,23 +1,24 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include "params.h"
+#include <ImageGrabberSim.h>
 
 #ifndef SPECKLENULLER_H
 #define SPECKLENULLER_H
-using namespace cv;
 
 struct ImgPt
 {
-    Point2i coordinates;
-    int intensity;
-    bool operator<(ImgPt &rPt){return intensity < rPt.intensity;}
+    cv::Point2i coordinates;
+    unsigned short intensity;
+    bool operator<(ImgPt &rPt){return intensity > rPt.intensity;}
 
 };
 
 class SpeckleNuller
 {
     private: 
-        Mat image, curFlatmap;
+        cv::Mat image, curFlatmap;
+        ImageGrabberSim imgGrabber;
         //Speckle *speckleList;
 
     public:

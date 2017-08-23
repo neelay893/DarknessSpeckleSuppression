@@ -1,8 +1,5 @@
 #include "SpeckleNuller.h"
 
-using namespace cv;
-using namespace std;
-
 SpeckleNuller::SpeckleNuller()
 {
     int ctrlRegionXSize = XCTRLEND - XCTRLSTART;
@@ -15,75 +12,75 @@ SpeckleNuller::SpeckleNuller()
 
 void SpeckleNuller::updateImage()
 {
-    image = imread("/home/neelay/Pictures/m1_sim_plot_v2.png");
-    namedWindow("Display", WINDOW_AUTOSIZE);
-    imshow("Display", image);
-    waitKey(0);
+    std::string filename = "/home/neelay/SpeckleNulling/DarknessSpeckleSuppression/darkness_simulation/images/14992057476.img";
+    imgGrabber.readImageData(filename);
+    image = imgGrabber.getImage();
 
 }
 
 void SpeckleNuller::detectSpeckles()
 {
     //Find local maxima within SPECKLEWINDOW size window
-    Mat kernel = Mat::ones(SPECKLEWINDOW, SPECKLEWINDOW, CV_8UC1);
-    Mat maxFiltIm, isMaximum;
-    vector<Point2i> maxima;
-    vector<Point2i> speckleLocs;
-    vector<ImgPt> maxImgPts;
+    cv::Mat kernel = cv::Mat::ones(SPECKLEWINDOW, SPECKLEWINDOW, CV_8UC1);
+    cv::Mat maxFiltIm, isMaximum;
+    std::vector<cv::Point2i> maxima;
+    std::vector<cv::Point2i> speckleLocs;
+    std::vector<ImgPt> maxImgPts;
 
-    dilate(image, maxFiltIm, kernel);
-    compare(image, maxFiltIm, isMaximum, CMP_EQ);
-    findNonZero(isMaximum, maxima);
+    cv::dilate(image, maxFiltIm, kernel);
+    cv::compare(image, maxFiltIm, isMaximum, cv::CMP_EQ);
+    cv::findNonZero(isMaximum, maxima);
     
     //Put Points in ImgPt Struct List
-    vector<Point2i>::iterator it;
+    std::vector<cv::Point2i>::iterator it;
     ImgPt tempPt;
     for(it = maxima.begin(); it != maxima.end(); it++)
     {
         tempPt.coordinates = *it;
-        tempPt.intensity = image.at<int>(*it);
-        maxImgPts.push_back(tempPt);
+        tempPt.intensity = image.at<ushort>(*it);
+        if(tempPt.intensity != 0)
+            maxImgPts.push_back(tempPt);
 
     }
     
     //Sort list of ImgPts
     std::sort(maxImgPts.begin(), maxImgPts.end());
     
-    vector<ImgPt>::iterator curElem, kt;
+    std::vector<ImgPt>::iterator curElem, kt;
     ImgPt curPt;
-    bool isDone = false;
     double ptDist;
     curElem = maxImgPts.begin();
-    int idx;
-    for(idx = 0; idx <MAXSPECKLES; idx++)
+    for(curElem = maxImgPts.begin(); 
+        (curElem < (maxImgPts.begin()+MAXSPECKLES)) && (curElem < maxImgPts.end()); curElem++)
     {
-        isDone = true;
         curPt = *curElem;
-        for(kt = curElem+1; kt != maxImgPts.end(); kt++)
+        for(kt = curElem+1; kt < maxImgPts.end(); kt++)
         {
             ptDist = norm(curPt.coordinates - (*kt).coordinates);
-            cout << "curElem" << (*curElem).coordinates << endl;
+            // std::cout << "curElem " << (*curElem).coordinates << std::endl;
+            // std::cout << "maxImgPts0" << maxImgPts[0].coordinates << std::endl;
+            // std::cout << "kt " << (*kt).coordinates << std::endl;
+            // std::cout << "maxImgPtsend " << (*(maxImgPts.end()-1)).coordinates << std::endl;
             if(ptDist <= EXCLUSIONZONE)
             {
+                //std::cout << "pdist" << ptDist << std::endl;
                 maxImgPts.erase(kt);
                 kt--;
-                isDone = false;
 
             }
 
         }
-        if(isDone)
-            break;
 
     }
 
-    for(kt = maxImgPts.begin(); kt != maxImgPts.end(); kt++)
-    {
-        cout << "coordinates" << (*kt).coordinates << endl;
-        cout << "intenstiy" << (*kt).intensity << endl;
-        cout << endl;
+    // for(kt = maxImgPts.begin(); kt != maxImgPts.end(); kt++)
+    // {
+    //     std::cout << "coordinates" << (*kt).coordinates << std::endl;
+    //     std::cout << "intenstiy" << (*kt).intensity << std::endl;
+    //     std::cout << std::endl;
 
-    }
+    // }
+    //imgGrabber.displayImage(true);
 
 }
 

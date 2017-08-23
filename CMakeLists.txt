@@ -5,5 +5,9 @@ find_package(OpenCV REQUIRED)
 include_directories(include)
 file(GLOB SOURCES "src/*.cpp")
 
+set (CMAKE_CXX_FLAGS "-pg")
+
 add_executable(SpeckleDestruction ${SOURCES})
 target_link_libraries(SpeckleDestruction ${OpenCV_LIBS})
+
+
