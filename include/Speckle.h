@@ -11,7 +11,7 @@ class Speckle
 {
     private:
         double phaseList[NPHASES];
-        unsigned short intensities[NPHASES];
+        unsigned short phaseIntensities[NPHASES];
         unsigned short initialIntensity;
         double finalPhase;
         double nullingIntensity;
@@ -20,11 +20,15 @@ class Speckle
         void computeSpecklePhase();
 
     public:
-        Speckle(cv::Point2i &pt, unsigned short intensity);
-        cv::Mat &generatePhaseFlatmap(int phaseInd); //think about storing after computation, possibly computing in advance
-        cv::Mat &generateFinalFlatmap();
+        Speckle(cv::Point2i &pt);
+        cv::Mat getProbeSpeckleFlatmap(int phaseInd); //think about storing after computation, possibly computing in advance
+        cv::Mat getFinalSpeckleFlatmap(double gain=DEFAULTGAIN);
         void incrementPhaseIntensity(int phaseInd, unsigned short intensity);
+        void setInitialIntensity(unsigned short intensity);
         unsigned short measureSpeckleIntensity(cv::Mat &image);
+        void calculateFinalPhase();
+        void setInitialIntensity(unsigned int intensity);
+        double getFinalPhase();
 
 };
 #endif

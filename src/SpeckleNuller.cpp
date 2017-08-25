@@ -91,18 +91,44 @@ std::vector<ImgPt> SpeckleNuller::detectSpeckles()
 
 }
 
-void SpeckleNuller::createSpeckles(std::vector<ImgPt> &imgPts)
+void SpeckleNuller::createSpeckleObjects(std::vector<ImgPt> &imgPts)
 {
     std::vector<ImgPt>::iterator it;
 
     for(it = imgPts.begin(); it < imgPts.end(); it++)
     {
-        Speckle speck = Speckle((*it).coordinates, (*it).intensity);
+        Speckle speck = Speckle((*it).coordinates);
+        speck.setInitialIntensity(speck.measureSpeckleIntensity(image));
         specklesList.push_back(speck);
-        unsigned short intensity = speck.measureSpeckleIntensity(image);
-        std::cout << "intensity " << intensity << std::endl;
 
     }
 
 }
 
+void SpeckleNuller::generateProbeFlatmap(std::vector<int> &phaseInds)
+{
+    std::vector<Speckle>::iterator it;
+    std::vector<int>::iterator indIt = phaseInds.begin();
+    nextFlatmap = cv::Mat::zeros(SIZE, SIZE, CV_64F);
+
+    for(it = specklesList.begin(); it < specklesList.end(); it++)
+    {
+        nextFlatmap += (*it).getProbeSpeckleFlatmap(*indIt);
+        indIt++;
+
+    }
+
+}
+
+void SpeckleNuller::generateProbeFlatmap(int phaseInd)
+{
+    std::vector<Speckle>::iterator it;
+    nextFlatmap = cv::Mat::zeros(SIZE, SIZE, CV_64F);
+
+    for(it = specklesList.begin(); it < specklesList.end(); it++)
+    {
+        nextFlatmap += (*it).getProbeSpeckleFlatmap(phaseInd);
+
+    }
+
+}

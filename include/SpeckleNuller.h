@@ -17,7 +17,7 @@ struct ImgPt
 class SpeckleNuller
 {
     private: 
-        cv::Mat image, curFlatmap;
+        cv::Mat image, curFlatmap, nextFlatmap;
         ImageGrabberSim imgGrabber;
         std::vector<Speckle> specklesList;
         //Speckle *speckleList;
@@ -26,7 +26,9 @@ class SpeckleNuller
         SpeckleNuller();
         std::vector<ImgPt> detectSpeckles();
         void updateImage();
-        void createSpeckles(std::vector<ImgPt> &imgPts);
+        void createSpeckleObjects(std::vector<ImgPt> &imgPts);
+        void generateProbeFlatmap(std::vector<int> &phaseInds);
+        void generateProbeFlatmap(int phaseInd);
         //void applyCorrection(
 
 };

@@ -17,9 +17,15 @@ int main()
 {
     //SpeckleNuller speckNull;
     std::cout << "blah" << std::endl;
-    speckNull.updateImage();
-    std::vector<ImgPt> rawSpecks = speckNull.detectSpeckles();
-    speckNull.createSpeckles(rawSpecks);
+    
+    for(int i=0; i<100; i++)
+    {
+        speckNull.updateImage();
+        std::vector<ImgPt> rawSpecks = speckNull.detectSpeckles();
+        speckNull.createSpeckleObjects(rawSpecks);
+        speckNull.generateProbeFlatmap(1);
+    
+    }
     //cv::Point2i pt(5,2);
     //Speckle speck(pt);
     //speckNull.detectSpeckles();

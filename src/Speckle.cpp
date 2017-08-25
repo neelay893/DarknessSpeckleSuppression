@@ -1,12 +1,12 @@
 #include "Speckle.h"
 
-Speckle::Speckle(cv::Point2i &pt, unsigned int intensity)
+Speckle::Speckle(cv::Point2i &pt)
 {
     coordinates = pt;
     for(int i=0; i<NPHASES; i++)
     {
         phaseList[i] = (double)2*M_PI*i/NPHASES;
-        intensities[i] = 0;
+        phaseIntensities[i] = 0;
 
     }
     apertureMask = cv::Mat::zeros(2*SPECKLEAPERTURERADIUS+1, 2*SPECKLEAPERTURERADIUS+1, CV_16UC1);
@@ -23,3 +23,28 @@ unsigned short Speckle::measureSpeckleIntensity(cv::Mat &image)
     return (unsigned short)cv::sum(speckleIm)[0];
 
 }
+
+void Speckle::calculateFinalPhase()
+{
+    //warning: current implementation only works for 4 phase measurements (0, pi/2, pi, 3pi/2)
+    finalPhase = std::atan((phaseIntensities[3]-phaseIntensities[1])/(phaseIntensities[0]-phaseIntensities[2]));
+   
+}
+
+cv::Mat Speckle::getProbeSpeckleFlatmap(int phaseInd)
+{
+    return generateFlatmap(kvecs, initialIntensity, phaseList[phaseInd]);
+
+}
+
+cv::Mat Speckle::getFinalSpeckleFlatmap(double gain)
+{
+    return generateFlatmap(kvecs, (unsigned short)(gain*initialIntensity), finalPhase);
+
+}
+
+void Speckle::setInitialIntensity(unsigned short intensity) {initialIntensity = intensity;}
+
+double Speckle::getFinalPhase() {return finalPhase;}
+
+
