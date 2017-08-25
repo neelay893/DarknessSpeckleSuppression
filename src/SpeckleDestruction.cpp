@@ -1,6 +1,8 @@
 #include <SpeckleNuller.h>
+#include <Speckle.h>
 #include <ImageGrabberSim.h>
 #include <iostream>
+#include <opencv2/opencv.hpp>
 
 SpeckleNuller speckNull;
 
@@ -14,9 +16,14 @@ void speckleDetectLoop()
 int main()
 {
     //SpeckleNuller speckNull;
+    std::cout << "blah" << std::endl;
     speckNull.updateImage();
+    std::vector<ImgPt> rawSpecks = speckNull.detectSpeckles();
+    speckNull.createSpeckles(rawSpecks);
+    //cv::Point2i pt(5,2);
+    //Speckle speck(pt);
     //speckNull.detectSpeckles();
-    speckleDetectLoop();
+    //speckleDetectLoop();
     //ImageGrabberSim imgGrabber;
     //std::string filename = "/home/neelay/SpeckleNulling/DarknessSpeckleSuppression/darkness_simulation/images/14992057476.img";
     //imgGrabber.readImageData(filename);

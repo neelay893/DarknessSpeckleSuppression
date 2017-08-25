@@ -4,8 +4,6 @@ SpeckleNuller::SpeckleNuller()
 {
     int ctrlRegionXSize = XCTRLEND - XCTRLSTART;
     int ctrlRegionYSize = YCTRLEND - YCTRLSTART;
-    int ctrlRegionXOffs = XCTRLSTART - CENTERX;
-    int ctrlRegionYOffs = YCTRLSTART - CENTERY;
     image.create(ctrlRegionYSize, ctrlRegionXSize, CV_16UC1);
 
 }
@@ -15,10 +13,11 @@ void SpeckleNuller::updateImage()
     std::string filename = "/home/neelay/SpeckleNulling/DarknessSpeckleSuppression/darkness_simulation/images/14992057476.img";
     imgGrabber.readImageData(filename);
     image = imgGrabber.getImage();
+    //imgGrabber.displayImage(true);
 
 }
 
-void SpeckleNuller::detectSpeckles()
+std::vector<ImgPt> SpeckleNuller::detectSpeckles()
 {
     //Find local maxima within SPECKLEWINDOW size window
     cv::Mat kernel = cv::Mat::ones(SPECKLEWINDOW, SPECKLEWINDOW, CV_8UC1);
@@ -39,6 +38,8 @@ void SpeckleNuller::detectSpeckles()
         tempPt.coordinates = *it;
         tempPt.intensity = image.at<ushort>(*it);
         if(tempPt.intensity != 0)
+            if((tempPt.coordinates.x < (image.cols-SPECKLEAPERTURERADIUS)) && (tempPt.coordinates.x >= SPECKLEAPERTURERADIUS)
+                && (tempPt.coordinates.y < (image.rows-SPECKLEAPERTURERADIUS)) && (tempPt.coordinates.y >= SPECKLEAPERTURERADIUS))
             maxImgPts.push_back(tempPt);
 
     }
@@ -49,7 +50,7 @@ void SpeckleNuller::detectSpeckles()
     std::vector<ImgPt>::iterator curElem, kt;
     ImgPt curPt;
     double ptDist;
-    curElem = maxImgPts.begin();
+
     for(curElem = maxImgPts.begin(); 
         (curElem < (maxImgPts.begin()+MAXSPECKLES)) && (curElem < maxImgPts.end()); curElem++)
     {
@@ -72,16 +73,36 @@ void SpeckleNuller::detectSpeckles()
         }
 
     }
+    
+    if(maxImgPts.size() > 16)
+        maxImgPts.erase(maxImgPts.begin()+16, maxImgPts.end());
 
-    // for(kt = maxImgPts.begin(); kt != maxImgPts.end(); kt++)
-    // {
-    //     std::cout << "coordinates" << (*kt).coordinates << std::endl;
-    //     std::cout << "intenstiy" << (*kt).intensity << std::endl;
-    //     std::cout << std::endl;
 
-    // }
+    for(kt = maxImgPts.begin(); kt != maxImgPts.end(); kt++)
+    {
+        std::cout << "coordinates" << (*kt).coordinates << std::endl;
+        std::cout << "intenstiy" << (*kt).intensity << std::endl;
+        std::cout << std::endl;
+
+    }
     //imgGrabber.displayImage(true);
+    
+    return maxImgPts;
 
 }
 
+void SpeckleNuller::createSpeckles(std::vector<ImgPt> &imgPts)
+{
+    std::vector<ImgPt>::iterator it;
+
+    for(it = imgPts.begin(); it < imgPts.end(); it++)
+    {
+        Speckle speck = Speckle((*it).coordinates, (*it).intensity);
+        specklesList.push_back(speck);
+        unsigned short intensity = speck.measureSpeckleIntensity(image);
+        std::cout << "intensity " << intensity << std::endl;
+
+    }
+
+}
 

@@ -1,8 +1,11 @@
 #include "ImageGrabberSim.h"
 
-ImageGrabberSim::ImageGrabberSim()
+ImageGrabberSim::ImageGrabberSim(int xCent, int yCent)
 {
     imageArr = new char[2*IMXSIZE*IMYSIZE];
+    xCenter = xCent;
+    yCenter = yCent;
+    setCtrlRegion();
 
 }
 
@@ -24,7 +27,22 @@ void ImageGrabberSim::readImageData(std::string filename)
 
 void ImageGrabberSim::getControlRegion()
 {
-    ctrlRegionImage = cv::Mat(rawImage, cv::Range(YCTRLSTART, YCTRLEND), cv::Range(XCTRLSTART, XCTRLEND));
+    ctrlRegionImage = cv::Mat(rawImage, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
+
+}
+
+cv::Mat &ImageGrabberSim::getImage()
+{
+    return ctrlRegionImage;
+
+}
+
+void ImageGrabberSim::setCtrlRegion()
+{
+    xCtrlStart = xCenter + XCTRLSTART;
+    xCtrlEnd = xCenter + XCTRLEND;
+    yCtrlStart = yCenter + YCTRLSTART;
+    yCtrlEnd = yCenter + YCTRLEND;
 
 }
 
@@ -40,8 +58,3 @@ void ImageGrabberSim::displayImage(bool showControlRegion)
 
 }
 
-cv::Mat &ImageGrabberSim::getImage()
-{
-    return ctrlRegionImage;
-
-}
