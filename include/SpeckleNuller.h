@@ -1,7 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include "params.h"
-#include "ImageGrabberSim.h"
+#include "ImageGrabber.h"
 #include "Speckle.h"
 
 #ifndef SPECKLENULLER_H
@@ -18,7 +18,7 @@ class SpeckleNuller
 {
     private: 
         cv::Mat image, curFlatmap, nextFlatmap;
-        ImageGrabberSim imgGrabber;
+        ImageGrabber imgGrabber;
         std::vector<Speckle> specklesList;
         //Speckle *speckleList;
 

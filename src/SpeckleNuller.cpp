@@ -11,8 +11,9 @@ SpeckleNuller::SpeckleNuller()
 void SpeckleNuller::updateImage()
 {
     std::string filename = "/home/neelay/SpeckleNulling/DarknessSpeckleSuppression/darkness_simulation/images/14992057476.img";
-    imgGrabber.readImageData(filename);
-    image = imgGrabber.getImage();
+    imgGrabber.startIntegrating(0);
+    imgGrabber.readNextImage();
+    image = imgGrabber.getCtrlRegionImageShm();
     //imgGrabber.displayImage(true);
 
 }
@@ -109,7 +110,7 @@ void SpeckleNuller::generateProbeFlatmap(std::vector<int> &phaseInds)
 {
     std::vector<Speckle>::iterator it;
     std::vector<int>::iterator indIt = phaseInds.begin();
-    nextFlatmap = cv::Mat::zeros(SIZE, SIZE, CV_64F);
+    nextFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
 
     for(it = specklesList.begin(); it < specklesList.end(); it++)
     {
@@ -123,7 +124,7 @@ void SpeckleNuller::generateProbeFlatmap(std::vector<int> &phaseInds)
 void SpeckleNuller::generateProbeFlatmap(int phaseInd)
 {
     std::vector<Speckle>::iterator it;
-    nextFlatmap = cv::Mat::zeros(SIZE, SIZE, CV_64F);
+    nextFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
 
     for(it = specklesList.begin(); it < specklesList.end(); it++)
     {

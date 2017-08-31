@@ -1,6 +1,7 @@
 #include <SpeckleNuller.h>
 #include <Speckle.h>
 #include <ImageGrabberSim.h>
+#include <ImageGrabber.h>
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
@@ -17,15 +18,19 @@ int main()
 {
     //SpeckleNuller speckNull;
     std::cout << "blah" << std::endl;
+    ImageGrabber imgGrabber;
+    imgGrabber.startIntegrating(0);
+    imgGrabber.readNextImage();
+    imgGrabber.displayImage();
     
-    for(int i=0; i<100; i++)
-    {
-        speckNull.updateImage();
-        std::vector<ImgPt> rawSpecks = speckNull.detectSpeckles();
-        speckNull.createSpeckleObjects(rawSpecks);
-        speckNull.generateProbeFlatmap(1);
-    
-    }
+    // for(int i=0; i<100; i++)
+    // {
+    //     speckNull.updateImage();
+    //     std::vector<ImgPt> rawSpecks = speckNull.detectSpeckles();
+    //     speckNull.createSpeckleObjects(rawSpecks);
+    //     speckNull.generateProbeFlatmap(1);
+    // 
+    // }
     //cv::Point2i pt(5,2);
     //Speckle speck(pt);
     //speckNull.detectSpeckles();

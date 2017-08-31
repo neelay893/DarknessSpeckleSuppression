@@ -9,11 +9,11 @@
 #define LAMBDAOVERD 2.0
 
 //DM PARAMS
-#define SIZE 66
-#define A 0
-#define B 0
-#define C 8
-#define ANGLE 0.0
+#define DM_SIZE 66
+#define AMP_A 0
+#define AMP_B 0
+#define AMP_C 8
+#define DM_ANGLE 0.0
 
 //NULLING PARAMS
 #define MAXSPECKLES 16
