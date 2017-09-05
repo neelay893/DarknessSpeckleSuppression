@@ -1,6 +1,9 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <params.h>
+#include <semaphore.h>
+#include <stdlib.h>
+#include <errno.h>
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/interprocess/sync/named_semaphore.hpp>
@@ -21,6 +24,9 @@ class ImageGrabber
         boost::interprocess::mapped_region tsMemRegion;
         boost::interprocess::named_semaphore *doneImgSemPtr;
         boost::interprocess::named_semaphore *takeImgSemPtr;
+        
+        //sem_t *doneImgSem;
+        //sem_t *takeImgSem;
         char *imgArr;
         char *tsPtr;
         int xCenter;

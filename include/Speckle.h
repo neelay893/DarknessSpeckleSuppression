@@ -4,6 +4,7 @@
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include "dmTools.h"
+#include "simInterfaceTools.h"
 
 #ifndef SPECKLE_H
 #define SPECKLE_H
@@ -15,20 +16,26 @@ class Speckle
         unsigned short initialIntensity;
         double finalPhase;
         double nullingIntensity;
-        cv::Point2i coordinates, kvecs;
+        cv::Point2i coordinates;
+        cv::Point2d kvecs;
         cv::Mat apertureMask;
         void computeSpecklePhase();
 
     public:
         Speckle(cv::Point2i &pt);
-        cv::Mat getProbeSpeckleFlatmap(int phaseInd); //think about storing after computation, possibly computing in advance
-        cv::Mat getFinalSpeckleFlatmap(double gain=DEFAULTGAIN);
         void incrementPhaseIntensity(int phaseInd, unsigned short intensity);
         void setInitialIntensity(unsigned short intensity);
         unsigned short measureSpeckleIntensity(cv::Mat &image);
         void calculateFinalPhase();
         void setInitialIntensity(unsigned int intensity);
         double getFinalPhase();
+
+        cv::Mat getProbeSpeckleFlatmap(int phaseInd);
+        cv::Mat getFinalSpeckleFlatmap(double gain=DEFAULTGAIN);
+        void generateSimProbeSpeckle(int phaseInd);
+        void generateSimFinalSpeckle(double gain);
+
+        cv::Point2i getCoordinates();
 
 };
 #endif

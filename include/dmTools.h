@@ -6,6 +6,6 @@
 
 typedef float Pixel;
 
-cv::Point2i calculateKVecs(const cv::Point2i &coords);
+cv::Point2d calculateKVecs(const cv::Point2i &coords);
 cv::Mat generateFlatmap(const cv::Point2d &kvecs, unsigned short intensity, double phase);
 double calculateDMAmplitude(const cv::Point2i &kvecs, unsigned short intensity);

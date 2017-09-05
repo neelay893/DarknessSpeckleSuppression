@@ -3,7 +3,7 @@
 #define IMYSIZE 125 
 
 #define XCTRLSTART 2 //from center psf
-#define XCTRLEND 20
+#define XCTRLEND 35
 #define YCTRLSTART -40
 #define YCTRLEND 40
 #define LAMBDAOVERD 2.0

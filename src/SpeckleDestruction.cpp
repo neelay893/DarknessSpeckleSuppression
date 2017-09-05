@@ -3,25 +3,49 @@
 #include <ImageGrabberSim.h>
 #include <ImageGrabber.h>
 #include <iostream>
+#include <unistd.h>
 #include <opencv2/opencv.hpp>
+#include <simInterfaceTools.h>
 
-SpeckleNuller speckNull;
-
-void speckleDetectLoop()
-{
-    for(int i=0; i<100; i++)
-        speckNull.detectSpeckles();
-
-}
 
 int main()
 {
     //SpeckleNuller speckNull;
     std::cout << "blah" << std::endl;
-    ImageGrabber imgGrabber;
-    imgGrabber.startIntegrating(0);
-    imgGrabber.readNextImage();
-    imgGrabber.displayImage();
+    SpeckleNuller speckNull(true);
+    std::vector<ImgPt> imgPts;
+
+    while(1)
+    {
+         speckNull.updateImage();
+         std::cout << "Detecting Speckles..." << std::endl;
+         imgPts = speckNull.detectSpeckles();
+         std::cout << "Creating Speckle Objects..." << std::endl;
+         speckNull.createSpeckleObjects(imgPts);
+         std::cout << "Creating Probe Speckles..." << std::endl;
+         for(int i=0; i<4; i++)
+         {
+            speckNull.generateProbeFlatmap(i);
+            speckNull.generateSimProbeSpeckles(i);
+            writeDoneKvecFile();
+            speckNull.updateImage();
+            speckNull.measureSpeckleProbeIntensities(i);
+
+         }
+
+         std::cout << "Nulling Speckles..." << std::endl;
+         speckNull.calculateFinalPhases();
+         speckNull.generateNullingFlatmap(0.5);
+         speckNull.generateSimFinalSpeckles(0.5);
+         writeDoneKvecFile();
+         speckNull.clearSpeckleObjects();
+         if(access("QUIT", F_OK)!=-1)
+            break;
+
+    }
+
+       
+
     
     // for(int i=0; i<100; i++)
     // {

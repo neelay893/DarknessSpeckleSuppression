@@ -1,12 +1,12 @@
 #include "dmTools.h"
 
-cv::Point2i calculateKVecs(const cv::Point2i &coords)
+cv::Point2d calculateKVecs(const cv::Point2i &coords)
 {
     cv::Point2d intCoords, kvecs;
     intCoords.x = (double)(coords.x + XCTRLSTART);
     intCoords.y = (double)(coords.y + YCTRLSTART);
-    kvecs.x = (std::cos(-DM_ANGLE)*intCoords.x - std::sin(-DM_ANGLE)*intCoords.y)/(double)LAMBDAOVERD;
-    kvecs.y = (std::sin(-DM_ANGLE)*intCoords.x + std::cos(-DM_ANGLE)*intCoords.y)/(double)LAMBDAOVERD;
+    kvecs.x = 2.0*M_PI*(std::cos(-DM_ANGLE)*intCoords.x - std::sin(-DM_ANGLE)*intCoords.y)/(double)LAMBDAOVERD;
+    kvecs.y = 2.0*M_PI*(std::sin(-DM_ANGLE)*intCoords.x + std::cos(-DM_ANGLE)*intCoords.y)/(double)LAMBDAOVERD;
     return kvecs;
 
 }

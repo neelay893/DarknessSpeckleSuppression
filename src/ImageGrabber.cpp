@@ -20,6 +20,17 @@ ImageGrabber::ImageGrabber(int xCent, int yCent)
     std::cout << "Opening Semaphores..." << std::endl;
     doneImgSemPtr = new boost::interprocess::named_semaphore(boost::interprocess::open_only_t(), doneImgSemName);
     takeImgSemPtr = new boost::interprocess::named_semaphore(boost::interprocess::open_only_t(), takeImgSemName);
+//    doneImgSem = sem_open(doneImgSemName, O_CREAT);
+//    takeImgSem = sem_open(takeImgSemName, O_CREAT);
+
+
+    //(*doneImgSemPtr).post();
+
+    // std::cout << "doneImgSemTW " << (*doneImgSemPtr).try_wait() << std::endl;
+    // std::cout << "doneImgSemTW " << (*doneImgSemPtr).try_wait() << std::endl;
+    // (*doneImgSemPtr).wait();
+    // while((*doneImgSemPtr).try_wait()==true)
+    //     std::cout << "doneImgSemTW" << std::endl;
     
     std::cout << "Done shared memory initialization." << std::endl;
     xCenter = xCent;
@@ -41,6 +52,7 @@ void ImageGrabber::startIntegrating(unsigned long startts)
 {
     //TODO: add TS to shared memory
     (*takeImgSemPtr).post();
+    //sem_post(takeImgSem);
 
 }
 
@@ -94,7 +106,7 @@ void ImageGrabber::changeCenter(int xCent, int yCent)
 
 void ImageGrabber::displayImage(bool showControlRegion)
 {
-    std::cout << "rawImageShmCtrl " << ctrlRegionImageShm << std::endl;
+    //std::cout << "rawImageShmCtrl " << ctrlRegionImageShm << std::endl;
     cv::namedWindow("DARKNESS Sim Image", cv::WINDOW_NORMAL);
     if(showControlRegion)
         cv::imshow("DARKNESS Sim Image", 2000*ctrlRegionImageShm);

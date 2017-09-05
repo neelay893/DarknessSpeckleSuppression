@@ -1,16 +1,16 @@
 #include "SpeckleNuller.h"
 
-SpeckleNuller::SpeckleNuller()
+SpeckleNuller::SpeckleNuller(bool vbose)
 {
     int ctrlRegionXSize = XCTRLEND - XCTRLSTART;
     int ctrlRegionYSize = YCTRLEND - YCTRLSTART;
     image.create(ctrlRegionYSize, ctrlRegionXSize, CV_16UC1);
+    verbose = vbose;
 
 }
 
 void SpeckleNuller::updateImage()
 {
-    std::string filename = "/home/neelay/SpeckleNulling/DarknessSpeckleSuppression/darkness_simulation/images/14992057476.img";
     imgGrabber.startIntegrating(0);
     imgGrabber.readNextImage();
     image = imgGrabber.getCtrlRegionImageShm();
@@ -79,13 +79,18 @@ std::vector<ImgPt> SpeckleNuller::detectSpeckles()
         maxImgPts.erase(maxImgPts.begin()+16, maxImgPts.end());
 
 
-    for(kt = maxImgPts.begin(); kt != maxImgPts.end(); kt++)
+    if(verbose)
     {
-        std::cout << "coordinates" << (*kt).coordinates << std::endl;
-        std::cout << "intenstiy" << (*kt).intensity << std::endl;
-        std::cout << std::endl;
+        for(kt = maxImgPts.begin(); kt != maxImgPts.end(); kt++)
+        {
+            std::cout << "coordinates" << (*kt).coordinates << std::endl;
+            std::cout << "intenstiy" << (*kt).intensity << std::endl;
+            std::cout << std::endl;
+
+        }
 
     }
+    
     //imgGrabber.displayImage(true);
     
     return maxImgPts;
@@ -95,12 +100,63 @@ std::vector<ImgPt> SpeckleNuller::detectSpeckles()
 void SpeckleNuller::createSpeckleObjects(std::vector<ImgPt> &imgPts)
 {
     std::vector<ImgPt>::iterator it;
+    
+    if(verbose)
+        std::cout << "SpeckleNuller: creating speckle objects..." << std::endl;
 
     for(it = imgPts.begin(); it < imgPts.end(); it++)
     {
         Speckle speck = Speckle((*it).coordinates);
         speck.setInitialIntensity(speck.measureSpeckleIntensity(image));
         specklesList.push_back(speck);
+        if(verbose)
+        {
+            std::cout << "Coordinates: " << (*it).coordinates;
+            std::cout << " Intensity: " << speck.measureSpeckleIntensity(image) << std::endl;
+
+        }
+
+    }
+
+}
+
+void SpeckleNuller::measureSpeckleProbeIntensities(int phaseInd)
+{
+    std::vector<Speckle>::iterator it;
+    
+    if(verbose)
+        std::cout << "SpeckleNuller: measuring probe intensities (index " << phaseInd << ")..." << std::endl; 
+
+    for(it = specklesList.begin(); it < specklesList.end(); it++)
+    {
+        (*it).incrementPhaseIntensity(phaseInd, (*it).measureSpeckleIntensity(image));
+        if(verbose)
+        {
+            std::cout << "Coordinates: " << (*it).getCoordinates();
+            std::cout << " Intensity: " << (*it).measureSpeckleIntensity(image) << std::endl;
+
+        }
+
+    }
+
+}
+
+void SpeckleNuller::calculateFinalPhases()
+{
+    std::vector<Speckle>::iterator it;
+    
+    if(verbose)
+        std::cout << "SpeckleNuller: calculating final phases..." << std::endl;
+
+    for(it = specklesList.begin(); it < specklesList.end(); it++)
+    {
+        (*it).calculateFinalPhase();
+        if(verbose)
+        {
+            std::cout << "Coordinates: " << (*it).getCoordinates();
+            std::cout << " Final phase: " << (*it).getFinalPhase() << std::endl;
+
+        }
 
     }
 
@@ -133,3 +189,42 @@ void SpeckleNuller::generateProbeFlatmap(int phaseInd)
     }
 
 }
+
+void SpeckleNuller::generateNullingFlatmap(double gain)
+{
+    std::vector<Speckle>::iterator it;
+    nextFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
+
+    for(it = specklesList.begin(); it < specklesList.end(); it++)
+    {
+        nextFlatmap += (*it).getFinalSpeckleFlatmap(gain);
+
+    }
+
+}
+
+void SpeckleNuller::generateSimProbeSpeckles(int phaseInd)
+{
+    std::vector<Speckle>::iterator it;
+
+    for(it = specklesList.begin(); it < specklesList.end(); it++)
+    {
+        (*it).generateSimProbeSpeckle(phaseInd);
+
+    }
+
+}
+
+void SpeckleNuller::generateSimFinalSpeckles(double gain)
+{
+    std::vector<Speckle>::iterator it;
+
+    for(it = specklesList.begin(); it < specklesList.end(); it++)
+    {
+        (*it).generateSimFinalSpeckle(gain);
+
+    }
+
+}
+
+void SpeckleNuller::clearSpeckleObjects() {specklesList.clear();}

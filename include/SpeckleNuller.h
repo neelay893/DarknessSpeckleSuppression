@@ -20,15 +20,22 @@ class SpeckleNuller
         cv::Mat image, curFlatmap, nextFlatmap;
         ImageGrabber imgGrabber;
         std::vector<Speckle> specklesList;
+        bool verbose;
         //Speckle *speckleList;
 
     public:
-        SpeckleNuller();
+        SpeckleNuller(bool vbose=false);
         std::vector<ImgPt> detectSpeckles();
         void updateImage();
         void createSpeckleObjects(std::vector<ImgPt> &imgPts);
+        void measureSpeckleProbeIntensities(int phaseInd);
+        void calculateFinalPhases();
         void generateProbeFlatmap(std::vector<int> &phaseInds);
         void generateProbeFlatmap(int phaseInd);
+        void generateNullingFlatmap(double gain=DEFAULTGAIN);
+        void generateSimProbeSpeckles(int phaseInd);
+        void generateSimFinalSpeckles(double gain=DEFAULTGAIN);
+        void clearSpeckleObjects();
         //void applyCorrection(
 
 };

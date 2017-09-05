@@ -5,17 +5,20 @@
 #include <semaphore.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <errno.h>
 #include "params.h"
 #include <stdlib.h>
+#include <string>
 
-std::string imageDir = "";
+std::string imageDir = "/home/neelay/SpeckleNulling/DarknessSpeckleSuppression/darkness_simulation/images/";
+std::string imgReadyFn = imageDir + "IMG_READY";
 char *imgArr;
 char *tsPtr;
 
 void getNextImage(int timestamp)
 {
-    std::string fn = "/home/neelay/SpeckleNulling/DarknessSpeckleSuppression/darkness_simulation/images/14991140022.img";
+    std::string fn = imageDir + std::to_string(timestamp) +  ".img";
     std::ifstream imgFile(fn.c_str(), std::ifstream::in|std::ifstream::binary);
     imgFile.read(imgArr, 2*IMXSIZE*IMYSIZE);
 
@@ -66,13 +69,15 @@ int main()
 
     }
     
-
+    //Main loop
     while(1)
     {
         if(sem_trywait(takeImgSem)==0)
         {
             std::cout << "grabbing image" << std::endl;
-            getNextImage(0);
+            while(access(imgReadyFn.c_str(), F_OK == -1));
+            remove(imgReadyFn.c_str());
+            getNextImage(12345);
             sem_post(doneImgSem);
         
         }
