@@ -26,23 +26,25 @@ void getNextImage(int timestamp)
 
 int main()
 {
-    const char* const doneImgSemName = "speckNullDoneImg";
-    const char* const takeImgSemName = "speckNullTakeImg";
+    const char* const doneImgSemName = "/speckNullDoneImg";
+    const char* const takeImgSemName = "/speckNullTakeImg";
     std::cout << "opening image buffer" << std::endl;
-    boost::interprocess::shared_memory_object shmImgBuffer(boost::interprocess::open_or_create, "speckNullImgBuff", boost::interprocess::read_write);
+    boost::interprocess::shared_memory_object shmImgBuffer(boost::interprocess::open_or_create, "/speckNullImgBuff", boost::interprocess::read_write);
     shmImgBuffer.truncate(2*125*80);
     boost::interprocess::mapped_region imgBufferRegion(shmImgBuffer, boost::interprocess::read_write);
     imgArr = (char*)imgBufferRegion.get_address();
     
     std::cout << "opening ts buffer" << std::endl;
-    boost::interprocess::shared_memory_object shmTs(boost::interprocess::open_or_create, "speckNullTimestamp", boost::interprocess::read_write);
+    boost::interprocess::shared_memory_object shmTs(boost::interprocess::open_or_create, "/speckNullTimestamp", boost::interprocess::read_write);
     shmTs.truncate(sizeof(unsigned long));
     boost::interprocess::mapped_region tsMemRegion(shmTs, boost::interprocess::read_write);
     tsPtr = (char*)tsMemRegion.get_address();
     
     std::cout << "initializing semaphores " << S_IWOTH << std::endl;
-    sem_t *doneImgSem = sem_open(doneImgSemName, O_CREAT, S_IWOTH, 0);
-    sem_t *takeImgSem = sem_open(takeImgSemName, O_CREAT, S_IWOTH, 0);
+    sem_unlink(doneImgSemName);
+    sem_unlink(takeImgSemName);
+    sem_t *doneImgSem = sem_open(doneImgSemName, O_CREAT, S_IWUSR|S_IRUSR, 0);
+    sem_t *takeImgSem = sem_open(takeImgSemName, O_CREAT, S_IWUSR|S_IRUSR, 0);
     if((doneImgSem == SEM_FAILED)||(takeImgSem == SEM_FAILED))
     {
         std::cout << "Semaphore creation failed!" << std::endl;

@@ -6,11 +6,13 @@
 #include <unistd.h>
 #include <opencv2/opencv.hpp>
 #include <simInterfaceTools.h>
-
+#include <chrono>
 
 int main()
 {
     //SpeckleNuller speckNull;
+
+    /*
     std::cout << "blah" << std::endl;
     SpeckleNuller speckNull(true);
     std::vector<ImgPt> imgPts;
@@ -43,6 +45,28 @@ int main()
             break;
 
     }
+    */
+
+    ImageGrabber imgGrabber;
+    std::chrono::microseconds rawTime;
+    uint64_t timestamp;
+    while(1)
+    {
+        std::string dummy;
+        std::cout << "Press any key...";
+        std::getline(std::cin, dummy);
+        std::cout << std::endl;
+        rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
+        timestamp = rawTime.count()/500;
+        std::cout << "Raw TS: " << timestamp << std::endl;
+        imgGrabber.startIntegrating(timestamp);
+        imgGrabber.readNextImage();
+        imgGrabber.displayImage();
+
+    }
+        
+
+
 
        
 

@@ -16,8 +16,8 @@ class ImageGrabber
         cv::Mat rawImageShm;
         cv::Mat ctrlRegionImageShm;
         cv::Mat ctrlRegionImageCpy;
-        const char* const doneImgSemName="speckNullDoneImg";
-        const char* const takeImgSemName="speckNullTakeImg";
+        const char* const doneImgSemName="/speckNullDoneImg";
+        const char* const takeImgSemName="/speckNullTakeImg";
         boost::interprocess::shared_memory_object shmImgBuffer;
         boost::interprocess::mapped_region imgBufferRegion;
         boost::interprocess::shared_memory_object shmTs;
@@ -28,7 +28,7 @@ class ImageGrabber
         //sem_t *doneImgSem;
         //sem_t *takeImgSem;
         char *imgArr;
-        char *tsPtr;
+        uint64_t *tsPtr;
         int xCenter;
         int yCenter;
         int xCtrlStart;
@@ -39,7 +39,7 @@ class ImageGrabber
     public:
         ImageGrabber(int xCent=40, int yCent=60);
         void readNextImage();
-        void startIntegrating(unsigned long startts);
+        void startIntegrating(uint64_t startts);
         cv::Mat& getCtrlRegionImageShm();
         cv::Mat& getCtrlRegionImageCpy();
         cv::Mat& getRawImageShm();

@@ -18,6 +18,9 @@ void SpeckleNuller::updateImage()
 
 }
 
+void SpeckleNuller::updateCurFlatmap()
+{}
+
 std::vector<ImgPt> SpeckleNuller::detectSpeckles()
 {
     //Find local maxima within SPECKLEWINDOW size window

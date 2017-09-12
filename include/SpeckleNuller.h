@@ -33,6 +33,7 @@ class SpeckleNuller
         void generateProbeFlatmap(std::vector<int> &phaseInds);
         void generateProbeFlatmap(int phaseInd);
         void generateNullingFlatmap(double gain=DEFAULTGAIN);
+        void updateCurFlatmap();
         void generateSimProbeSpeckles(int phaseInd);
         void generateSimFinalSpeckles(double gain=DEFAULTGAIN);
         void clearSpeckleObjects();

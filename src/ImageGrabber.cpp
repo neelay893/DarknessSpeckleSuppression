@@ -3,7 +3,7 @@
 ImageGrabber::ImageGrabber(int xCent, int yCent)
 {
     std::cout << "Opening Image Buffer..." << std::endl;
-    shmImgBuffer = boost::interprocess::shared_memory_object(boost::interprocess::open_only, "speckNullImgBuff", boost::interprocess::read_only);
+    shmImgBuffer = boost::interprocess::shared_memory_object(boost::interprocess::open_only, "/speckNullImgBuff", boost::interprocess::read_only);
     std::cout << "Truncating..," << std::endl;
     //shmImgBuffer.truncate(2*IMXSIZE*IMYSIZE);
     std::cout << "Mapping..." << std::endl;
@@ -12,12 +12,14 @@ ImageGrabber::ImageGrabber(int xCent, int yCent)
     imgArr = (char*)imgBufferRegion.get_address();
     
     std::cout << "Opening TS Buffer..." << std::endl;
-    shmTs = boost::interprocess::shared_memory_object(boost::interprocess::open_only, "speckNullTimestamp", boost::interprocess::read_write);
+    shmTs = boost::interprocess::shared_memory_object(boost::interprocess::open_only, "/speckNullTimestamp", boost::interprocess::read_write);
     //shmTs.truncate(sizeof(unsigned long));
     tsMemRegion = boost::interprocess::mapped_region(shmTs, boost::interprocess::read_write);
-    tsPtr = (char*)tsMemRegion.get_address();
+    tsPtr = (uint64_t*)tsMemRegion.get_address();
     
     std::cout << "Opening Semaphores..." << std::endl;
+//    sem_unlink(doneImgSemName);
+//    sem_unlink(takeImgSemName);
     doneImgSemPtr = new boost::interprocess::named_semaphore(boost::interprocess::open_only_t(), doneImgSemName);
     takeImgSemPtr = new boost::interprocess::named_semaphore(boost::interprocess::open_only_t(), takeImgSemName);
 //    doneImgSem = sem_open(doneImgSemName, O_CREAT);
@@ -48,11 +50,10 @@ void ImageGrabber::readNextImage()
 
 }
 
-void ImageGrabber::startIntegrating(unsigned long startts)
+void ImageGrabber::startIntegrating(uint64_t startts)
 {
-    //TODO: add TS to shared memory
+    *tsPtr = startts;
     (*takeImgSemPtr).post();
-    //sem_post(takeImgSem);
 
 }
 
