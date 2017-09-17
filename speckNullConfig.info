@@ -1,0 +1,37 @@
+ImgParams
+{
+    xCenter 40 ;in pixel coordinates on DARKNESS image
+    yCenter 60
+
+    lambdaOverD 2
+
+    xCtrlStart -20 ;relative to center, in pixel coordinates
+    xCtrlEnd 0
+    yCtrlStart 0
+    yCtrlEnd 35
+
+    useBadPixMask true
+    badPixMaskFile /mnt/data0/Darkness/20170914/badPixelMask.img
+    badPixFiltSize 5
+
+}
+
+DMCal
+{
+    a 0
+    b 0
+    c 8
+
+}
+
+NullingParams
+{
+    maxSpeckles 16
+    speckleWindow 3
+    exclusionZone 8
+    nPhases 4
+    apertureRadius 2
+    defaultGain 0.5
+    useBoxBlur false
+
+}
