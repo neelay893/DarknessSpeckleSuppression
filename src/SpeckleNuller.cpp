@@ -120,7 +120,7 @@ void SpeckleNuller::createSpeckleObjects(std::vector<ImgPt> &imgPts)
 
     for(it = imgPts.begin(); it < imgPts.end(); it++)
     {
-        Speckle speck = Speckle((*it).coordinates);
+        Speckle speck = Speckle((*it).coordinates, cfgParams);
         speck.setInitialIntensity(speck.measureSpeckleIntensity(image));
         specklesList.push_back(speck);
         if(verbose)

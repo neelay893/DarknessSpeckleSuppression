@@ -1,7 +1,8 @@
 #include "Speckle.h"
 
-Speckle::Speckle(cv::Point2i &pt)
+Speckle::Speckle(cv::Point2i &pt, boost::property_tree::ptree &ptree)
 {
+    cfgParams = ptree;
     coordinates = pt;
     for(int i=0; i<NPHASES; i++)
     {
@@ -9,16 +10,16 @@ Speckle::Speckle(cv::Point2i &pt)
         phaseIntensities[i] = 0;
 
     }
-    apertureMask = cv::Mat::zeros(2*SPECKLEAPERTURERADIUS+1, 2*SPECKLEAPERTURERADIUS+1, CV_16UC1);
-    cv::circle(apertureMask, cv::Point(SPECKLEAPERTURERADIUS, SPECKLEAPERTURERADIUS), SPECKLEAPERTURERADIUS, 1, -1);
+    apertureMask = cv::Mat::zeros(2*cfgParams.get<int>("NullingParams.apertureRadius")+1, 2*cfgParams.get<int>("NullingParams.apertureRadius")+1, CV_16UC1);
+    cv::circle(apertureMask, cv::Point(cfgParams.get<int>("NullingParams.apertureRadius"), cfgParams.get<int>("NullingParams.apertureRadius")), cfgParams.get<int>("NullingParams.apertureRadius"), 1, -1);
     kvecs = calculateKVecs(coordinates);
 
 }
 
 unsigned short Speckle::measureSpeckleIntensity(cv::Mat &image)
 {
-    cv::Mat speckleIm = cv::Mat(image, cv::Range(coordinates.y-SPECKLEAPERTURERADIUS, coordinates.y+SPECKLEAPERTURERADIUS+1),
-                            cv::Range(coordinates.x-SPECKLEAPERTURERADIUS, coordinates.x+SPECKLEAPERTURERADIUS+1));
+    cv::Mat speckleIm = cv::Mat(image, cv::Range(coordinates.y-cfgParams.get<int>("NullingParams.apertureRadius"), coordinates.y+cfgParams.get<int>("NullingParams.apertureRadius")+1),
+                            cv::Range(coordinates.x-cfgParams.get<int>("NullingParams.apertureRadius"), coordinates.x+cfgParams.get<int>("NullingParams.apertureRadius")+1));
     speckleIm = speckleIm.mul(apertureMask);
     //std::cout << speckleIm << std::endl;
     return (unsigned short)cv::sum(speckleIm)[0];

@@ -49,7 +49,7 @@ void ImageGrabber::readNextImage()
     (*doneImgSemPtr).wait();
     //cv::Mat rawImageTp = cv::Mat(IMXSIZE, IMYSIZE, CV_16UC1, imgArr);
     //cv::transpose(rawImageTp, rawImageShm); 
-    std::cout << "Creating OpenCV object..." << std::endl;
+    //std::cout << "Creating OpenCV object..." << std::endl;
     rawImageShm = cv::Mat(cv::Size(IMXSIZE, IMYSIZE), CV_16UC1, imgArr);
     copyControlRegion();
     if(cfgParams.get<bool>("ImgParams.useBadPixMask"))

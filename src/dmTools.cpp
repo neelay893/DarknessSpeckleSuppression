@@ -30,6 +30,7 @@ cv::Mat generateFlatmap(const cv::Point2d &kvecs, unsigned short intensity, doub
 
         });
 
+
     return flatmap;
 
 }

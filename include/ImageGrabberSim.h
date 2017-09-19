@@ -1,6 +1,7 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <params.h>
+#include <fstream>
 
 #ifndef IMAGEGRABBERSIM_H
 #define IMAGEGRABBERSIM_H

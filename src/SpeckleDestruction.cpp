@@ -92,7 +92,7 @@ void realSpeckleDetectionTest()
         timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
         std::cout << "Raw TS: " << timestamp << std::endl;
         std::cout << "Starting Integration..." << std::endl;
-        speckNull.updateImage(0);
+        speckNull.updateImage(timestamp);
         elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()) - rawTime;
         timestamp = elapsedTime.count()/1000;
         std::cout << "Int time: " << timestamp << std::endl;
