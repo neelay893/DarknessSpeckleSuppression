@@ -39,6 +39,13 @@ ImageGrabber::ImageGrabber(boost::property_tree::ptree &ptree)
 
     }
 
+    if(cfgParams.get<bool>("ImgParams.useFlatCal"))
+    {
+        flatCalArr = new char[8*IMXSIZE*IMYSIZE]; //pack flat cal into 64 bit double array
+        loadFlatCal();
+
+    }
+
 }
 
 ImageGrabber::ImageGrabber()
@@ -119,12 +126,28 @@ void ImageGrabber::loadBadPixMask()
 
 }
 
+void ImageGrabber::loadFlatCal()
+{
+    std::string flatCalFn = cfgParams.get<std::string>("ImgParams.flatCalFile");
+    std::ifstream flatCalFile(flatCalFn.c_str(), std::ifstream::in|std::ifstream::binary);
+    flatCalFile.read(flatCalArr, 8*IMXSIZE*IMYSIZE);
+    flatWeights = cv::Mat(IMYSIZE, IMXSIZE, CV_64FC1, flatCalArr);
+    flatWeightsCtrl = cv::Mat(flatWeights, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
+
+}
+
 void ImageGrabber::badPixFiltCtrlRegion()
 {
     cv::Mat badPixMaskCtrlInv = (~badPixMaskCtrl)&1;
     cv::Mat ctrlRegionFilt = ctrlRegionImage.clone();
     cv::medianBlur(ctrlRegionImage.mul(badPixMaskCtrlInv), ctrlRegionFilt, cfgParams.get<int>("ImgParams.badPixFiltSize"));
     ctrlRegionImage = ctrlRegionFilt.mul(badPixMaskCtrl) + ctrlRegionImage.mul(badPixMaskCtrlInv);
+
+}
+
+void ImageGrabber::applyFlatCalCtrlRegion()
+{
+    ctrlRegionImage = ctrlRegionImage.mul(flatWeightsCtrl);
 
 }
 
@@ -145,3 +168,10 @@ void ImageGrabber::displayImage(bool showControlRegion)
 
 }
 
+/*
+void ImageGrabber::closeShm()
+{
+    boost::interprocess::named_semaphore::remove(DONEIMGSEM);
+    boost::interprocess::named_semaphore::remove(TAKEIMGSEM);
+    boost::
+}*/

@@ -11,8 +11,8 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
 
-#define DONEIMGSEM "/speckNullDoneImg"
-#define TAKEIMGSEM "/speckNullTakeImg"
+#define DONEIMGSEM "/speckNullDoneImg1"
+#define TAKEIMGSEM "/speckNullTakeImg1"
 
 #ifndef IMAGEGRABBER_H
 #define IMAGEGRABBER_H
@@ -23,6 +23,8 @@ class ImageGrabber
         cv::Mat ctrlRegionImage;
         cv::Mat badPixMask;
         cv::Mat badPixMaskCtrl;
+        cv::Mat flatWeights;
+        cv::Mat flatWeightsCtrl;
         boost::interprocess::shared_memory_object shmImgBuffer;
         boost::interprocess::mapped_region imgBufferRegion;
         boost::interprocess::shared_memory_object shmTs;
@@ -37,6 +39,7 @@ class ImageGrabber
         uint16_t *imgArr;
         uint64_t *tsPtr;
         char *badPixArr;
+        char *flatCalArr;
         int xCenter;
         int yCenter;
         int xCtrlStart;
@@ -59,7 +62,9 @@ class ImageGrabber
         void copyControlRegion();
         void setCtrlRegion();
         void loadBadPixMask();
+        void loadFlatCal();
         void badPixFiltCtrlRegion();
+        void applyFlatCalCtrlRegion();
 
 };
 #endif

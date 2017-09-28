@@ -12,7 +12,7 @@ Speckle::Speckle(cv::Point2i &pt, boost::property_tree::ptree &ptree)
     }
     apertureMask = cv::Mat::zeros(2*cfgParams.get<int>("NullingParams.apertureRadius")+1, 2*cfgParams.get<int>("NullingParams.apertureRadius")+1, CV_16UC1);
     cv::circle(apertureMask, cv::Point(cfgParams.get<int>("NullingParams.apertureRadius"), cfgParams.get<int>("NullingParams.apertureRadius")), cfgParams.get<int>("NullingParams.apertureRadius"), 1, -1);
-    kvecs = calculateKVecs(coordinates);
+    kvecs = calculateKVecs(coordinates, cfgParams);
 
 }
 

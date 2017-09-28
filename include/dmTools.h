@@ -3,9 +3,13 @@
 #include <cmath>
 #include <iostream>
 #include "params.h"
+#include <boost/property_tree/ptree.hpp>
 
-typedef float Pixel;
+typedef double Pixel;
 
-cv::Point2d calculateKVecs(const cv::Point2i &coords);
-cv::Mat generateFlatmap(const cv::Point2d &kvecs, unsigned short intensity, double phase);
+cv::Point2d calculateKVecs(const cv::Point2i &coords, boost::property_tree::ptree &cfgParams);
+cv::Mat generateFlatmap(const cv::Point2d kvecs, unsigned short intensity, double phase, boost::property_tree::ptree &cfgParams);
+cv::Mat generateFlatmap(const cv::Point2d kvecs, double amp, double phase);
 double calculateDMAmplitude(const cv::Point2i &kvecs, unsigned short intensity);
+cv::Mat convertFlatmapToCentoffs(const cv::Mat &flatmap, const cv::Mat &influenceMatrix);
+cv::Mat clampCentoffs(cv::Mat &centoffs);

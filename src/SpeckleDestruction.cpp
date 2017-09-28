@@ -2,6 +2,7 @@
 #include <Speckle.h>
 #include <ImageGrabberSim.h>
 #include <ImageGrabber.h>
+#include <P3KCom.h>
 #include <iostream>
 #include <unistd.h>
 #include <opencv2/opencv.hpp>
@@ -84,15 +85,15 @@ void realSpeckleDetectionTest()
     int i;
     for(i=0; i<100; i++)
     {
-        //std::string dummy;
-        //std::cout << "Press any key...";
-        //std::getline(std::cin, dummy);
+        std::string dummy;
+        std::cout << "Press any key...";
+        std::getline(std::cin, dummy);
         std::cout << std::endl;
         rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
         timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
         std::cout << "Raw TS: " << timestamp << std::endl;
         std::cout << "Starting Integration..." << std::endl;
-        speckNull.updateImage(timestamp);
+        speckNull.updateImage(0);
         elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()) - rawTime;
         timestamp = elapsedTime.count()/1000;
         std::cout << "Int time: " << timestamp << std::endl;
@@ -101,18 +102,45 @@ void realSpeckleDetectionTest()
     }
 
 }
-        
 
-
-int main()
+void simpleP3KTest()
 {
     boost::property_tree::ptree cfgParams;
     read_info("speckNullConfig.info", cfgParams);
-    double dmA = cfgParams.get<double>("DMCal.a");
     
-    std::cout << "DM A: " << dmA << std::endl;
+    cv::Point2d kvecs(2,2);
+    double phase = 0;
+    uint16_t intensity = 1000;
+    
+    cv::Mat flatmap = generateFlatmap(kvecs, intensity, phase);
+    P3KCom p3k(cfgParams);
+    p3k.grabCurrentFlatmap();
+    p3k.loadNewFlatmap(flatmap);
+    
+}
 
-    realSpeckleDetectionTest();
+void simpleFlatmapLoadSaveTest()
+{
+    boost::property_tree::ptree cfgParams;
+    std::cout << "reading cfg file" << std::endl;
+    read_info("speckNullConfig.info", cfgParams);
+    std::cout << "generating new flatmap" << std::endl;
+    cv::Mat newFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
+    std::cout << "creating p3k com object" << std::endl;
+    P3KCom p3k = P3KCom(cfgParams);
+    std::cout << "grabbing flatmap" << std::endl;
+    p3k.grabCurrentFlatmap();
+    std::cout << "loading flatmap" << std::endl;
+    newFlatmap = generateFlatmap(cv::Point2d(3,3), 100, 0);
+    p3k.loadNewFlatmap(newFlatmap);
+    
+}
+
+int main()
+{
+
+    //realSpeckleDetectionTest();
+    simpleFlatmapLoadSaveTest();
 
 
     // for(int i=0; i<100; i++)
