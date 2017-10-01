@@ -14,6 +14,13 @@ SpeckleNuller::SpeckleNuller(boost::property_tree::ptree &ptree, bool vbose)
     image.create(ctrlRegionYSize, ctrlRegionXSize, CV_16UC1);
     verbose = vbose;
     imgGrabber = ImageGrabber(ptree);
+    std::cout << "Creating P3K Object" << std::endl;
+    p3k = new P3KCom(ptree);
+    if(cfgParams.get<bool>("P3KParams.useCentoffs"))
+        (*p3k).grabCurrentCentoffs();
+    else
+        (*p3k).grabCurrentFlatmap();
+    nullingFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64FC1);
 
 }
 
@@ -28,6 +35,7 @@ void SpeckleNuller::updateImage(uint64_t timestamp)
 
 void SpeckleNuller::updateCurFlatmap()
 {}
+
 
 std::vector<ImgPt> SpeckleNuller::detectSpeckles()
 {
@@ -89,8 +97,8 @@ std::vector<ImgPt> SpeckleNuller::detectSpeckles()
 
     }
     
-    if(maxImgPts.size() > 16)
-        maxImgPts.erase(maxImgPts.begin()+16, maxImgPts.end());
+    if(maxImgPts.size() > cfgParams.get<int>("NullingParams.maxSpeckles"))
+        maxImgPts.erase(maxImgPts.begin()+cfgParams.get<int>("NullingParams.maxSpeckles"), maxImgPts.end());
 
 
     if(verbose)
@@ -180,11 +188,11 @@ void SpeckleNuller::generateProbeFlatmap(std::vector<int> &phaseInds)
 {
     std::vector<Speckle>::iterator it;
     std::vector<int>::iterator indIt = phaseInds.begin();
-    nextFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
+    probeFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
 
     for(it = specklesList.begin(); it < specklesList.end(); it++)
     {
-        nextFlatmap += (*it).getProbeSpeckleFlatmap(*indIt);
+        probeFlatmap += (*it).getProbeSpeckleFlatmap(*indIt);
         indIt++;
 
     }
@@ -194,24 +202,38 @@ void SpeckleNuller::generateProbeFlatmap(std::vector<int> &phaseInds)
 void SpeckleNuller::generateProbeFlatmap(int phaseInd)
 {
     std::vector<Speckle>::iterator it;
-    nextFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
+    probeFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
 
     for(it = specklesList.begin(); it < specklesList.end(); it++)
     {
-        nextFlatmap += (*it).getProbeSpeckleFlatmap(phaseInd);
+        probeFlatmap += (*it).getProbeSpeckleFlatmap(phaseInd);
 
     }
+
+}
+
+void SpeckleNuller::loadProbeSpeckles()
+{
+    if(cfgParams.get<bool>("P3KParams.useCentoffs"))
+        (*p3k).loadNewCentoffsFromFlatmap(probeFlatmap);
+
+}
+
+void SpeckleNuller::loadNullingSpeckles()
+{
+    if(cfgParams.get<bool>("P3KParams.useCentoffs"))
+        (*p3k).loadNewCentoffsFromFlatmap(nullingFlatmap);
 
 }
 
 void SpeckleNuller::generateNullingFlatmap(double gain)
 {
     std::vector<Speckle>::iterator it;
-    nextFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
+    //nullingFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
 
     for(it = specklesList.begin(); it < specklesList.end(); it++)
     {
-        nextFlatmap += (*it).getFinalSpeckleFlatmap(gain);
+        nullingFlatmap += (*it).getFinalSpeckleFlatmap(gain);
 
     }
 

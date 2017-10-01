@@ -155,6 +155,7 @@ void ImageGrabber::displayImage(bool showControlRegion)
 {
     //std::cout << "rawImageShm " << rawImageShm << std::endl;
     //cv::namedWindow("DARKNESS Sim Image", cv::WINDOW_NORMAL);
+    std::cout << "badPixMaskCtrl" << badPixMaskCtrl << std::endl;
     if(showControlRegion)
     {
      //   cv::imshow("DARKNESS Sim Image", 10*ctrlRegionImage); 

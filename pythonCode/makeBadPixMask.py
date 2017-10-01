@@ -24,12 +24,14 @@ def saveBinImg(image, imageFn):
     
 if __name__=='__main__':
     mdd = os.environ['MKID_DATA_DIR']
-    bmdir = os.path.join(mdd, "Beammap")
-    beammapFn = "finalMap_20170914.txt"
+    #bmdir = os.path.join(mdd, "Beammap")
+    bmdir = '/mnt/data0/Darkness/20170924/Beammap'
+    beammapFn = "finalMap_20170924.txt"
     badPixImgFn = "badPixelMask.img"
+    badPixImgDir = os.path.join(mdd, "snBinFiles")
     
     beammapFile = os.path.join(bmdir, beammapFn)
     badPixMask = np.transpose(getBeammappedPixels(beammapFile)) #transpose to agree w/ opencv convention
     plt.imshow(badPixMask)
     plt.show()
-    saveBinImg(badPixMask, os.path.join(mdd, badPixImgFn))
+    saveBinImg(badPixMask, os.path.join(badPixImgDir, badPixImgFn))

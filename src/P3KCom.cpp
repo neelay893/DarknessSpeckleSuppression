@@ -6,14 +6,18 @@ P3KCom::P3KCom(boost::property_tree::ptree &pt)
     dmActMapArr = new char[2*DM_SIZE*DM_SIZE];
 
     flatmapDir = cfgParams.get<std::string>("P3KParams.flatmapDir");
+    flatmapMntDir = cfgParams.get<std::string>("P3KParams.flatmapMntDir");
     curFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64FC1);
     loadDMActuatorMap();
     
     if(cfgParams.get<bool>("P3KParams.useCentoffs"))
     {
-        centoffsDir = cfgParams.get<std::string>("P3KParams.centOffsDir");
+        centoffsDir = cfgParams.get<std::string>("P3KParams.centoffsDir");
+        centoffsMntDir = cfgParams.get<std::string>("P3KParams.centoffsMntDir");
         influenceMatrixArr = new char[8*N_CENTOFFS*N_DM_ACTS];
+        illumMatrixArr = new char[8*ILLUM_MAT_SIZE];
         loadInfluenceMatrix();
+        loadIllumMatrix();
         curCentoffs = cv::Mat::zeros(N_CENTOFFS, 1, CV_64FC1);
     
     }
@@ -22,6 +26,9 @@ P3KCom::P3KCom(boost::property_tree::ptree &pt)
         startSSHSession();
 
 }
+
+P3KCom::P3KCom()
+{}
 
 P3KCom::~P3KCom()
 {
@@ -36,24 +43,40 @@ P3KCom::~P3KCom()
     
 }
         
-void P3KCom::loadNewCentoffsFromFlatmap(cv::Mat &flatmap, std::string centoffsFn)
+void P3KCom::loadNewCentoffsFromFlatmap(cv::Mat &flatmap)
 {
-    cv::Mat centoffs = convertFlatmapToCentoffs(flatmap, influenceMatrix);
-    if(cfgParams.get<bool>("P3KParams.clampCentoffs"))
-        centoffs = clampCentoffs(centoffs);
+    std::cout << "converting flatmap to list..." << std::endl;
+    cv::Mat flatFlatmap = convertFlatmapToList(flatmap);
+    // std::cout << "converting flatmap to centoffs..." << std::endl;
+    // std::cout << "flatFlatmap shape: " << flatFlatmap.rows << " " << flatFlatmap.cols << " " << std::endl;
+    // std::cout << "influenceMat shape: " << influenceMatrix.rows << " " << influenceMatrix.cols << " " << std::endl;
+    cv::Mat centoffs = convertFlatmapToCentoffs(flatFlatmap, influenceMatrix);
+    //std::cout << centoffs << std::endl;
+    std::string centoffsFn = cfgParams.get<std::string>("P3KParams.loadCentoffsFn");
     
     centoffs += curCentoffs;
     
+    if(cfgParams.get<bool>("P3KParams.useIllumMat"))
+        centoffs = applyIllumMatrix(centoffs, illumMatrix);
+    
+    std::cout << "clamping centoffs..." << std::endl;
+    if(cfgParams.get<bool>("P3KParams.clampCentoffs"))
+        centoffs = clampCentoffs(centoffs, cfgParams.get<double>("P3KParams.clampVal"));
+    
     double centoffVal;
-    std::ofstream centoffsFile(centoffsDir + centoffsFn, std::ofstream::trunc);
+    std::ofstream centoffsFile(centoffsMntDir + centoffsFn, std::ofstream::trunc);
     for(int r=0; r<centoffs.rows; r++)
     {
-        centoffVal = centoffs.at<double>(r);
+        centoffVal = centoffs.at<double>(r,0);
+        if(r==1) std::cout << centoffVal << std::endl;
         centoffsFile << centoffVal << ' ';
 
     }
     
     centoffsFile.close();
+
+    if(cfgParams.get<bool>("P3KParams.useSSH"))
+        sshApplyCentoffs(centoffsFn);
 
 }
 
@@ -61,15 +84,16 @@ void P3KCom::loadNewCentoffsFromFlatmap(cv::Mat &flatmap, std::string centoffsFn
  * Grabs current centroid offsets from text file, 
  * and saves in curCentoffs Mat
  **/
-void P3KCom::grabCurrentCentoffs(std::string centoffsFn)
+void P3KCom::grabCurrentCentoffs()
 {
-    std::ifstream centoffsFile(centoffsDir + centoffsFn, std::ifstream::in);
+    std::string centoffsFn = cfgParams.get<std::string>("P3KParams.grabCentoffsFn");
+    std::ifstream centoffsFile(centoffsMntDir + centoffsFn, std::ifstream::in);
     std::string val;
     int centoffsInd = 0;
     while(centoffsFile)
     {
         centoffsFile >> val;
-        curCentoffs.at<double>(centoffsInd, 1) = std::stod(val);
+        curCentoffs.at<double>(centoffsInd, 0) = std::stod(val);
         centoffsInd++;
         
     }
@@ -85,7 +109,7 @@ void P3KCom::grabCurrentCentoffs(std::string centoffsFn)
 void P3KCom::grabCurrentFlatmap()
 {
     std::string flatmapFn = cfgParams.get<std::string>("P3KParams.grabFlatmapFile");
-    std::ifstream flatmapFile(flatmapDir + flatmapFn, std::ifstream::in);
+    std::ifstream flatmapFile(flatmapMntDir + flatmapFn, std::ifstream::in);
     std::string val;
     int flatmapInd = 0;
     double flatmapArr[DM_SIZE*DM_SIZE];
@@ -114,6 +138,28 @@ void P3KCom::grabCurrentFlatmap()
     
 }
 
+cv::Mat P3KCom::convertFlatmapToList(cv::Mat &flatmap)
+{
+    cv::Mat flatmapList = cv::Mat::zeros(N_DM_ACTS, 1, CV_64F);
+    double flatmapVal;
+    int actMapInd;
+    for(int r=0; r<DM_SIZE; r++)
+        for(int c=0; c<DM_SIZE; c++)
+        {
+            actMapInd = dmActMap.at<uint16_t>(r,c)-1;
+            if(actMapInd!=-1)
+            {
+                flatmapVal = flatmap.at<double>(r,c);
+                flatmapList.at<double>(actMapInd,0) = flatmapVal;
+                
+            }
+        
+        }
+
+    return flatmapList;
+
+}
+
 /*
  * Writes a txt file containing flatmap offsets described by <flatmap>
  * Actual flatmap is curFlatmap + flatmap
@@ -140,7 +186,7 @@ void P3KCom::loadNewFlatmap(cv::Mat &flatmap)
         
     
     
-    std::ofstream flatmapFile(flatmapDir + flatmapFn, std::ofstream::trunc);
+    std::ofstream flatmapFile(flatmapMntDir + flatmapFn, std::ofstream::trunc);
     for(int i=0; i<N_DM_ACTS; i++)
     {
         flatmapFile << flatmapArr[i] << std::endl;
@@ -148,6 +194,8 @@ void P3KCom::loadNewFlatmap(cv::Mat &flatmap)
     }
     
     flatmapFile.close();
+    
+    std::cout << flatmapMntDir + flatmapFn << std::endl;
     
     if(cfgParams.get<bool>("P3KParams.useSSH"))
         sshApplyFlatmap(flatmapFn);
@@ -165,13 +213,21 @@ void P3KCom::loadDMActuatorMap()
 
 void P3KCom::loadInfluenceMatrix()
 {
-    std::string influenceMatFn = cfgParams.get<std::string>("ImgParams.influenceMatFile");
+    std::string influenceMatFn = cfgParams.get<std::string>("P3KParams.influenceMatFile");
     std::ifstream influenceMatFile(influenceMatFn.c_str(), std::ifstream::in|std::ifstream::binary);
-    influenceMatFile.read(influenceMatrixArr, 8*IMXSIZE*IMYSIZE);
-    influenceMatrix = cv::Mat(IMYSIZE, IMXSIZE, CV_64FC1, influenceMatrixArr);
+    influenceMatFile.read(influenceMatrixArr, 8*N_CENTOFFS*N_DM_ACTS);
+    influenceMatrix = cv::Mat(N_CENTOFFS, N_DM_ACTS, CV_64FC1, influenceMatrixArr);
 
 }
 
+void P3KCom::loadIllumMatrix()
+{
+    std::string illumMatFn = cfgParams.get<std::string>("P3KParams.illumMatFile");
+    std::ifstream illumMatFile(illumMatFn.c_str(), std::ifstream::in|std::ifstream::binary);
+    illumMatFile.read(illumMatrixArr, 8*ILLUM_MAT_SIZE);
+    illumMatrix = cv::Mat(ILLUM_MAT_SIZE, 1, CV_64FC1, illumMatrixArr);
+
+}
     
 /**
  * starts ssh session with P3K telem
@@ -189,7 +245,7 @@ void P3KCom::startSSHSession()
     ssh_options_set(sshSesh, SSH_OPTIONS_LOG_VERBOSITY, &verbosity);
     ssh_options_set(sshSesh, SSH_OPTIONS_PORT, &port);
     
-    char buffer[2048];
+    char buffer[25600];
     int nbytes;
     int rc;
 
@@ -238,13 +294,24 @@ void P3KCom::startSSHSession()
         
     }
     
-}
+    nbytes = ssh_channel_read(sshChan, buffer, sizeof(buffer), 0);
+    
+    while(nbytes > 0)
+    {
+        //std::cout << buffer << std::endl;
+        nbytes = ssh_channel_read(sshChan, buffer, sizeof(buffer), 0);
+        
+    }
+    
+    sshChan = ssh_channel_new(sshSesh);
+    rc = ssh_channel_open_session(sshChan);
+    if(rc != SSH_OK)
+    {
+        ssh_channel_free(sshChan);
+        exit(-1);
 
-void P3KCom::sshApplyFlatmap(std::string flatmapFn)
-{
-    std::string flatmapPath = flatmapDir + flatmapFn;
-    std::string sshCommand = "ao hwfp hodm_map=" + flatmapPath;
-    int rc = ssh_channel_request_exec(sshChan, sshCommand.c_str());
+    }
+    rc = ssh_channel_request_exec(sshChan, "ls -l");
     if(rc != SSH_OK)
     {
         ssh_channel_close(sshChan);
@@ -254,6 +321,72 @@ void P3KCom::sshApplyFlatmap(std::string flatmapFn)
         std::cout << "WARNING: SSH Command Error" << std::endl;
         
     }
+    
+    ssh_channel_read(sshChan, buffer, sizeof(buffer), 0);
+    //std::cout << buffer << std::endl;
+    std::cout << "SSH Channel Opened" << std::endl;
+    
+}
+
+void P3KCom::sshApplyFlatmap(std::string flatmapFn)
+{
+    char *buffer = new char[2048];
+    std::string flatmapPath = flatmapDir + flatmapFn;
+    std::string sshCommand = "ao hwfp hodm_map=" + flatmapPath;
+    sshSendCommand(sshCommand);
+
+}
+
+void P3KCom::sshApplyCentoffs(std::string centoffsFn)
+{
+    char *buffer = new char[2048];
+    std::string centoffsPath = centoffsDir + centoffsFn;
+    std::string sshCommand = "ao hwfp cent_offsets=" + centoffsPath;
+    sshSendCommand(sshCommand);
+
+}
+
+void P3KCom::sshSendCommand(std::string sshCommand)
+{
+    char *buffer = new char[2048];
+    std::cout << "SSH Command" << sshCommand << std::endl;
+    std::cout << "Creating ssh Channel..." << std::endl;
+    sshChan = ssh_channel_new(sshSesh);
+    std::cout << "Opening ssh channel..." << std::endl;
+    int rc = ssh_channel_open_session(sshChan);
+    if(rc != SSH_OK)
+    {
+        ssh_channel_close(sshChan);
+        ssh_channel_free(sshChan);
+        ssh_disconnect(sshSesh);
+        ssh_free(sshSesh);
+        std::cout << "Failure opening ssh channel" << std::endl;
+        exit(-1);
+
+    }
+    std::cout << "Sending ssh command..." << std::endl;
+    std::cout << "SSHCommand C Str.." << sshCommand.c_str() << std::endl;
+    //sshCommand = "ls -l";
+    ssh_channel_request_exec(sshChan, sshCommand.c_str());
+    if(rc != SSH_OK)
+    {
+        ssh_channel_close(sshChan);
+        ssh_channel_free(sshChan);
+        ssh_disconnect(sshSesh);
+        ssh_free(sshSesh);
+        std::cout << "WARNING: SSH Command Error (applying flatmap)" << std::endl;
+        
+    }
+    
+    else
+    {
+        ssh_channel_read(sshChan, buffer, sizeof(buffer), 0);
+        std::cout << buffer << std::endl;
+        std::cout << "command applied!" << std::endl;
+    
+    }
+    
+    ssh_channel_close(sshChan);
     
 }
 

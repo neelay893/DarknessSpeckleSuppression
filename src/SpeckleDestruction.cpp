@@ -3,6 +3,7 @@
 #include <ImageGrabberSim.h>
 #include <ImageGrabber.h>
 #include <P3KCom.h>
+#include <dmTools.h>
 #include <iostream>
 #include <unistd.h>
 #include <opencv2/opencv.hpp>
@@ -49,6 +50,64 @@ void speckNullSimLoop()
 
 }
 
+
+
+void speckNullLoop()
+{
+    boost::property_tree::ptree cfgParams;
+    read_info("speckNullConfig.info", cfgParams);
+    SpeckleNuller speckNull(cfgParams, true);
+    std::vector<ImgPt> imgPts;
+    std::chrono::microseconds rawTime;
+    uint64_t timestamp;
+
+    for(int n=0; n<5; n++)
+    {
+        std::cout << "================BEGIN LOOP ITERATION=================" << std::endl;
+        rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
+        timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
+        std::cout << "Raw TS: " << timestamp << std::endl;
+        std::cout << "Starting Integration..." << std::endl;
+        speckNull.updateImage(timestamp+200);
+        //speckNull.updateImage(0);
+        std::cout << "Detecting Speckles..." << std::endl;
+        imgPts = speckNull.detectSpeckles();
+        std::cout << "Creating Speckle Objects..." << std::endl;
+        speckNull.createSpeckleObjects(imgPts);
+        std::cout << "Creating Probe Speckles..." << std::endl;
+        for(int i=0; i<4; i++)
+        {
+            std::cout << "------Begin Probe Iteration---------" << std::endl;
+            std::cout << "generating probe flatmap " << std::endl;
+            speckNull.generateProbeFlatmap(i);
+            std::cout << "loading probe centoffs" << std::endl;
+            speckNull.loadProbeSpeckles();
+            rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
+            timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
+            std::cout << "Raw TS: " << timestamp << std::endl;
+            std::cout << "Starting Integration..." << std::endl;
+            speckNull.updateImage(timestamp+200);
+            speckNull.measureSpeckleProbeIntensities(i);
+            std::cout << std::endl << std::endl << std::endl;
+
+        }
+
+        std::cout << "Nulling Speckles..." << std::endl;
+        speckNull.calculateFinalPhases();
+        speckNull.generateNullingFlatmap(cfgParams.get<double>("NullingParams.defaultGain"));
+        speckNull.loadNullingSpeckles();
+        speckNull.clearSpeckleObjects();
+        std::cout << std::endl << std::endl << std::endl;
+        
+        // std::string dummy;
+        // std::cout << "Press any key...";
+        // std::getline(std::cin, dummy);
+        // std::cout << std::endl;
+
+    }
+
+}
+
 void realImgGrabTest()
 { 
     boost::property_tree::ptree cfgParams;
@@ -83,7 +142,7 @@ void realSpeckleDetectionTest()
     std::chrono::microseconds rawTime, elapsedTime;
     uint64_t timestamp;
     int i;
-    for(i=0; i<100; i++)
+    for(i=0; i<3; i++)
     {
         std::string dummy;
         std::cout << "Press any key...";
@@ -93,7 +152,7 @@ void realSpeckleDetectionTest()
         timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
         std::cout << "Raw TS: " << timestamp << std::endl;
         std::cout << "Starting Integration..." << std::endl;
-        speckNull.updateImage(0);
+        speckNull.updateImage(timestamp);
         elapsedTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()) - rawTime;
         timestamp = elapsedTime.count()/1000;
         std::cout << "Int time: " << timestamp << std::endl;
@@ -113,7 +172,8 @@ void simpleP3KTest()
     uint16_t intensity = 1000;
     
     cv::Mat flatmap = generateFlatmap(kvecs, intensity, phase);
-    P3KCom p3k(cfgParams);
+    P3KCom p3k;
+    p3k = P3KCom(cfgParams);
     p3k.grabCurrentFlatmap();
     p3k.loadNewFlatmap(flatmap);
     
@@ -131,16 +191,45 @@ void simpleFlatmapLoadSaveTest()
     std::cout << "grabbing flatmap" << std::endl;
     p3k.grabCurrentFlatmap();
     std::cout << "loading flatmap" << std::endl;
-    newFlatmap = generateFlatmap(cv::Point2d(3,3), 100, 0);
+    newFlatmap = generateFlatmap(cv::Point2d(10,0), 100, 0);
     p3k.loadNewFlatmap(newFlatmap);
     
 }
 
+void simpleCentoffsLoadSaveTest()
+{
+    boost::property_tree::ptree cfgParams;
+    std::cout << "reading cfg file" << std::endl;
+    read_info("speckNullConfig.info", cfgParams);
+    std::cout << "generating new flatmap" << std::endl;
+    cv::Mat newFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
+    std::cout << "creating p3k com object" << std::endl;
+    //P3KCom *p3k;
+    P3KCom *p3k;
+    p3k = new P3KCom(cfgParams);
+    std::cout << "grabbing centoffs" << std::endl;
+    (*p3k).grabCurrentCentoffs();
+    std::cout << "loading centoffs" << std::endl;
+    cv::Point2i coords(25,20);
+    std::cout << "coords: " << coords.x << " "  << coords.y << std::endl;
+    cv::Point2d kvecs = calculateKVecs(coords, cfgParams);
+    //kvecs = cv::Point2d(67.77,25.14);
+    std::cout << "Kvecs: " << kvecs.x << " " << kvecs.y << std::endl;
+    newFlatmap = generateFlatmap(kvecs, 100, 0);
+    cv::Point2d kvecs2 = cv::Point2d(35,35);
+    cv::Mat newFlatmap2 = generateFlatmap(kvecs2, 100, 0);
+    newFlatmap += newFlatmap2;
+    (*p3k).loadNewCentoffsFromFlatmap(newFlatmap);    
+
+}
+
 int main()
 {
-
+    //simpleCentoffsLoadSaveTest();
+    speckNullLoop();
+    //simpleCentoffsLoadSaveTest();
     //realSpeckleDetectionTest();
-    simpleFlatmapLoadSaveTest();
+    //simpleCentoffsLoadSaveTest();
 
 
     // for(int i=0; i<100; i++)

@@ -22,4 +22,5 @@
 #define DM_SIZE 66
 #define N_CENTOFFS 8192
 #define N_DM_ACTS 3388
+#define ILLUM_MAT_SIZE 4096
 

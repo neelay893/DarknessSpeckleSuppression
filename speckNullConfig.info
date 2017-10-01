@@ -1,18 +1,20 @@
 ImgParams
 {
-    xCenter 40 ;in pixel coordinates on DARKNESS image
-    yCenter 60
+    xCenter 28 ;in pixel coordinates on DARKNESS image
+    yCenter 73
 
-    lambdaOverD 2
+    lambdaOverD 2.7
 
     xCtrlStart -20 ;relative to center, in pixel coordinates
-    xCtrlEnd 0
-    yCtrlStart 0
-    yCtrlEnd 35
+    xCtrlEnd 40
+    yCtrlStart 12
+    yCtrlEnd 45
 
     useBadPixMask true
-    badPixMaskFile /mnt/data0/Darkness/20170914/badPixelMask.img
+    badPixMaskFile /mnt/data0/Darkness/20170930/snBinFiles/badPixelMask.img
     badPixFiltSize 5
+
+    useFlatCal false
 
 }
 
@@ -20,18 +22,44 @@ DMCal
 {
     a 0
     b 0
-    c 8
+    c 1; changed int time to 500 (2000 int time = 0.25)
+    angle -1.252 ;-1.216072;-70
 
 }
 
 NullingParams
 {
-    maxSpeckles 16
-    speckleWindow 3
-    exclusionZone 8
+    maxSpeckles 2
+    speckleWindow 8
+    exclusionZone 6
     nPhases 4
-    apertureRadius 2
-    defaultGain 0.5
-    useBoxBlur false
+    apertureRadius 4
+    defaultGain 0.2
+    useBoxBlur true
+
+}
+
+P3KParams
+{
+    useCentoffs true
+    centoffsMntDir /mnt/nfs/p3k/tables/cent_offsets/
+    centoffsDir /p3k/tables/cent_offsets/
+    grabCentoffsFn co_sn_temp
+    loadCentoffsFn dark_centoffs_sn_temp_loop
+    
+    useIllumMat false
+    clampCentoffs true
+    clampVal 0.4
+    
+    flatmapMntDir /mnt/nfs/p3k/tables/hodm_map/ ;/mnt/data0/Darkness/20170928/ 
+    flatmapDir /p3k/tables/hodm_map/
+    grabFlatmapFile hodm_sn_temp ;hodm_flatmap_wl?
+    loadFlatmapFile hodm_sn_temp_dark
+    actMapFile p3kBinFiles/actMap.bin
+    
+    influenceMatFile ./p3kBinFiles/influenceMatCold.bin
+    illumMatFile ./p3kBinFiles/illumMat.bin
+            
+    useSSH true
 
 }

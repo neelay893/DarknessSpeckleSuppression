@@ -3,6 +3,7 @@
 #include "params.h"
 #include "ImageGrabber.h"
 #include "Speckle.h"
+#include "P3KCom.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
 
@@ -20,10 +21,11 @@ struct ImgPt
 class SpeckleNuller
 {
     private: 
-        cv::Mat image, curFlatmap, nextFlatmap;
+        cv::Mat image, probeFlatmap, nullingFlatmap;
         ImageGrabber imgGrabber;
         std::vector<Speckle> specklesList;
         boost::property_tree::ptree cfgParams;
+        P3KCom *p3k;
         bool verbose;
         //Speckle *speckleList;
 
@@ -40,6 +42,8 @@ class SpeckleNuller
         void updateCurFlatmap();
         void generateSimProbeSpeckles(int phaseInd);
         void generateSimFinalSpeckles(double gain=DEFAULTGAIN);
+        void loadProbeSpeckles();
+        void loadNullingSpeckles();
         void clearSpeckleObjects();
         //void applyCorrection(
 

@@ -16,17 +16,17 @@ Speckle::Speckle(cv::Point2i &pt, boost::property_tree::ptree &ptree)
 
 }
 
-unsigned short Speckle::measureSpeckleIntensity(cv::Mat &image)
+unsigned int Speckle::measureSpeckleIntensity(cv::Mat &image)
 {
     cv::Mat speckleIm = cv::Mat(image, cv::Range(coordinates.y-cfgParams.get<int>("NullingParams.apertureRadius"), coordinates.y+cfgParams.get<int>("NullingParams.apertureRadius")+1),
                             cv::Range(coordinates.x-cfgParams.get<int>("NullingParams.apertureRadius"), coordinates.x+cfgParams.get<int>("NullingParams.apertureRadius")+1));
     speckleIm = speckleIm.mul(apertureMask);
-    //std::cout << speckleIm << std::endl;
-    return (unsigned short)cv::sum(speckleIm)[0];
+    speckleIm.convertTo(speckleIm, CV_32SC1);
+    return (unsigned int)cv::sum(speckleIm)[0];
 
 }
 
-void Speckle::incrementPhaseIntensity(int phaseInd, unsigned short intensity)
+void Speckle::incrementPhaseIntensity(int phaseInd, unsigned int intensity)
 {
     phaseIntensities[phaseInd] += intensity;
 
@@ -35,19 +35,23 @@ void Speckle::incrementPhaseIntensity(int phaseInd, unsigned short intensity)
 void Speckle::calculateFinalPhase()
 {
     //warning: current implementation only works for 4 phase measurements (0, pi/2, pi, 3pi/2)
-    finalPhase = std::atan2((double)(phaseIntensities[3]-phaseIntensities[1]), (double)(phaseIntensities[0]-phaseIntensities[2]));
+    finalPhase = std::atan2(((double)phaseIntensities[3]-(double)phaseIntensities[1]), ((double)phaseIntensities[0]-(double)phaseIntensities[2]));
+    std::cout << "phase intensities: " << phaseIntensities[0] << " " << phaseIntensities[1] << " " << phaseIntensities[2] << " " << phaseIntensities[3] << std::endl;
+    std::cout << "final phase " << finalPhase << std::endl;
    
 }
 
 cv::Mat Speckle::getProbeSpeckleFlatmap(int phaseInd)
 {
-    return generateFlatmap(kvecs, initialIntensity, phaseList[phaseInd]);
+    std::cout << "Speckle probe phase: " << phaseList[phaseInd] << std::endl;
+    return generateFlatmap(kvecs, initialIntensity, phaseList[phaseInd], cfgParams);
 
 }
 
 cv::Mat Speckle::getFinalSpeckleFlatmap(double gain)
 {
-    return generateFlatmap(kvecs, (unsigned short)(gain*initialIntensity), finalPhase + M_PI);
+    std::cout << "Speckle null phase: " << finalPhase + M_PI << std::endl;
+    return generateFlatmap(kvecs, (unsigned short)(gain*initialIntensity), finalPhase + M_PI, cfgParams);
 
 }
 
@@ -63,7 +67,7 @@ void Speckle::generateSimFinalSpeckle(double gain)
 
 }
 
-void Speckle::setInitialIntensity(unsigned short intensity) {initialIntensity = intensity;}
+void Speckle::setInitialIntensity(unsigned int intensity) {initialIntensity = intensity;}
 
 double Speckle::getFinalPhase() {return finalPhase;}
 

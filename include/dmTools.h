@@ -12,4 +12,5 @@ cv::Mat generateFlatmap(const cv::Point2d kvecs, unsigned short intensity, doubl
 cv::Mat generateFlatmap(const cv::Point2d kvecs, double amp, double phase);
 double calculateDMAmplitude(const cv::Point2i &kvecs, unsigned short intensity);
 cv::Mat convertFlatmapToCentoffs(const cv::Mat &flatmap, const cv::Mat &influenceMatrix);
-cv::Mat clampCentoffs(cv::Mat &centoffs);
+cv::Mat clampCentoffs(cv::Mat &centoffs, double clamp);
+cv::Mat applyIllumMatrix(cv::Mat &centoffs, cv::Mat &illumMat);
