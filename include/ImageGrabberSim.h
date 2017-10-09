@@ -17,6 +17,12 @@ class ImageGrabberSim
         int xCtrlEnd;
         int yCtrlStart;
         int yCtrlEnd;
+        cv::Mat badPixMask;
+        cv::Mat badPixMaskCtrl;
+        cv::Mat flatWeights;
+        cv::Mat flatWeightsCtrl;
+        cv::Mat darkSub;
+        cv::Mat darkSubCtrl;
 
     public:
         ImageGrabberSim(int xCent=40, int yCent=60);

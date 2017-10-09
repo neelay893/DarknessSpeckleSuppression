@@ -1,20 +1,24 @@
 ImgParams
 {
-    xCenter 28 ;in pixel coordinates on DARKNESS image
-    yCenter 73
+    xCenter 41 ;in pixel coordinates on DARKNESS image
+    yCenter 79
 
-    lambdaOverD 2.7
+    lambdaOverD 2.71
 
-    xCtrlStart -20 ;relative to center, in pixel coordinates
-    xCtrlEnd 40
-    yCtrlStart 12
-    yCtrlEnd 45
+    xCtrlStart 0 ;-20 ;relative to center, in pixel coordinates
+    xCtrlEnd  0 ;40
+    yCtrlStart 0 ;12
+    yCtrlEnd 45;45
 
     useBadPixMask true
-    badPixMaskFile /mnt/data0/Darkness/20170930/snBinFiles/badPixelMask.img
+    badPixMaskFile /mnt/data0/Darkness/20171006/snBinFiles/badPixelMask.img
     badPixFiltSize 5
 
     useFlatCal false
+    flatCalFile /mnt/data0/Darkness/20171001/snBinFiles/flatWeights.bin
+    
+    useDarkSub true
+    darkSubFile /mnt/data0/Darkness/20171006/snBinFiles/darkSub.bin
 
 }
 
@@ -22,20 +26,26 @@ DMCal
 {
     a 0
     b 0
-    c 1; changed int time to 500 (2000 int time = 0.25)
-    angle -1.252 ;-1.216072;-70
+    c 1; int time = 1s (2000 int time = 1s)
+    angle -1.232 ;-1.232 ;-1.252 ;-1.2055 ;-1.2321 ;-1.252 ;-1.216072;-70
 
 }
 
 NullingParams
 {
-    maxSpeckles 2
+    maxSpeckles 3
     speckleWindow 8
     exclusionZone 6
     nPhases 4
     apertureRadius 4
-    defaultGain 0.2
-    useBoxBlur true
+    defaultGain 0.5
+    useBoxBlur false
+    useGaussianBlur false
+
+    scaleByVisibility false ;DO NOT turn both on at the same time
+    useGainLoop true
+
+    applyRandomCoordinateOffset true
 
 }
 
@@ -47,7 +57,7 @@ P3KParams
     grabCentoffsFn co_sn_temp
     loadCentoffsFn dark_centoffs_sn_temp_loop
     
-    useIllumMat false
+    useIllumMat true
     clampCentoffs true
     clampVal 0.4
     

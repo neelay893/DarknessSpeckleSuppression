@@ -35,10 +35,14 @@ class SpeckleNuller
         void updateImage(uint64_t timestamp);
         void createSpeckleObjects(std::vector<ImgPt> &imgPts);
         void measureSpeckleProbeIntensities(int phaseInd);
+        void measureSpeckleGainIntensities(int phaseInd);
         void calculateFinalPhases();
+        void calculateFinalGains();
         void generateProbeFlatmap(std::vector<int> &phaseInds);
         void generateProbeFlatmap(int phaseInd);
-        void generateNullingFlatmap(double gain=DEFAULTGAIN);
+        void generateProbeGainFlatmap(int gainInd);
+        void generateNullingFlatmap(double gain);
+        void generateNullingFlatmap();
         void updateCurFlatmap();
         void generateSimProbeSpeckles(int phaseInd);
         void generateSimFinalSpeckles(double gain=DEFAULTGAIN);

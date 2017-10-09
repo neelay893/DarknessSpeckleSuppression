@@ -45,6 +45,13 @@ ImageGrabber::ImageGrabber(boost::property_tree::ptree &ptree)
         loadFlatCal();
 
     }
+    
+    if(cfgParams.get<bool>("ImgParams.useDarkSub"))
+    {
+        darkSubArr = new char[2*IMXSIZE*IMYSIZE]; //pack dark into ushort array
+        loadDarkSub();
+
+    }
 
 }
 
@@ -57,8 +64,13 @@ void ImageGrabber::readNextImage()
     //cv::Mat rawImageTp = cv::Mat(IMXSIZE, IMYSIZE, CV_16UC1, imgArr);
     //cv::transpose(rawImageTp, rawImageShm); 
     //std::cout << "Creating OpenCV object..." << std::endl;
+    //std::cout << badPixMask << std::endl;
     rawImageShm = cv::Mat(cv::Size(IMXSIZE, IMYSIZE), CV_16UC1, imgArr);
     copyControlRegion();
+    if(cfgParams.get<bool>("ImgParams.useDarkSub"))
+        applyDarkSubCtrlRegion();
+    if(cfgParams.get<bool>("ImgParams.useFlatCal"))
+        applyFlatCalCtrlRegion();
     if(cfgParams.get<bool>("ImgParams.useBadPixMask"))
         badPixFiltCtrlRegion();
 
@@ -120,6 +132,7 @@ void ImageGrabber::loadBadPixMask()
 {
     std::string badPixFn = cfgParams.get<std::string>("ImgParams.badPixMaskFile");
     std::ifstream badPixFile(badPixFn.c_str(), std::ifstream::in|std::ifstream::binary);
+    if(!badPixFile.good()) std::cout << "WARNING: Could not find bad pixel mask" << std::endl;
     badPixFile.read(badPixArr, 2*IMXSIZE*IMYSIZE);
     badPixMask = cv::Mat(IMYSIZE, IMXSIZE, CV_16UC1, badPixArr);
     badPixMaskCtrl = cv::Mat(badPixMask, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
@@ -130,9 +143,24 @@ void ImageGrabber::loadFlatCal()
 {
     std::string flatCalFn = cfgParams.get<std::string>("ImgParams.flatCalFile");
     std::ifstream flatCalFile(flatCalFn.c_str(), std::ifstream::in|std::ifstream::binary);
+    if(!flatCalFile.good()) std::cout << "WARNING: Could not find flat cal" << std::endl;
     flatCalFile.read(flatCalArr, 8*IMXSIZE*IMYSIZE);
     flatWeights = cv::Mat(IMYSIZE, IMXSIZE, CV_64FC1, flatCalArr);
     flatWeightsCtrl = cv::Mat(flatWeights, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
+    //cv::imshow("flat", flatWeights);
+    //cv::waitKey(0);
+    //std::cout << flatWeights << std::endl;
+
+}
+
+void ImageGrabber::loadDarkSub()
+{
+    std::string darkSubFn = cfgParams.get<std::string>("ImgParams.darkSubFile");
+    std::ifstream darkSubFile(darkSubFn.c_str(), std::ifstream::in|std::ifstream::binary);
+    if(!darkSubFile.good()) std::cout << "WARNING: Could not find dark sub" << std::endl;
+    darkSubFile.read(darkSubArr, 2*IMXSIZE*IMYSIZE);
+    darkSub = cv::Mat(IMYSIZE, IMXSIZE, CV_16UC1, darkSubArr);
+    darkSubCtrl = cv::Mat(darkSub, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
 
 }
 
@@ -147,7 +175,18 @@ void ImageGrabber::badPixFiltCtrlRegion()
 
 void ImageGrabber::applyFlatCalCtrlRegion()
 {
-    ctrlRegionImage = ctrlRegionImage.mul(flatWeightsCtrl);
+    std::cout<<"applying flat" << std::endl;
+    cv::Mat ctrlRegionImageDouble;
+    ctrlRegionImage.convertTo(ctrlRegionImageDouble, CV_64FC1);
+    ctrlRegionImageDouble = ctrlRegionImageDouble.mul(flatWeightsCtrl);
+    ctrlRegionImageDouble.convertTo(ctrlRegionImage, CV_16UC1);
+    //std::cout << ctrlRegionImage << std::endl;
+
+}
+
+void ImageGrabber::applyDarkSubCtrlRegion()
+{
+    ctrlRegionImage = ctrlRegionImage - darkSubCtrl;
 
 }
 
@@ -155,7 +194,7 @@ void ImageGrabber::displayImage(bool showControlRegion)
 {
     //std::cout << "rawImageShm " << rawImageShm << std::endl;
     //cv::namedWindow("DARKNESS Sim Image", cv::WINDOW_NORMAL);
-    std::cout << "badPixMaskCtrl" << badPixMaskCtrl << std::endl;
+    //std::cout << "badPixMaskCtrl" << badPixMaskCtrl << std::endl;
     if(showControlRegion)
     {
      //   cv::imshow("DARKNESS Sim Image", 10*ctrlRegionImage); 

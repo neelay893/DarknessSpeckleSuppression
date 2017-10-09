@@ -13,9 +13,12 @@ class Speckle
 {
     private:
         double phaseList[NPHASES];
+        double gainList[NGAINS];
         unsigned int phaseIntensities[NPHASES];
+        unsigned int gainIntensities[NGAINS];
         unsigned int initialIntensity;
         double finalPhase;
+        double finalGain;
         double nullingIntensity;
         cv::Point2i coordinates;
         cv::Point2d kvecs;
@@ -26,12 +29,16 @@ class Speckle
     public:
         Speckle(cv::Point2i &pt, boost::property_tree::ptree &ptree);
         void incrementPhaseIntensity(int phaseInd, unsigned int intensity);
+        void incrementGainIntensity(int gainInd, unsigned int intensity);
         void setInitialIntensity(unsigned int intensity);
         unsigned int measureSpeckleIntensity(cv::Mat &image);
         void calculateFinalPhase();
+        void calculateFinalGain();
+        double getFinalGain();
         double getFinalPhase();
 
         cv::Mat getProbeSpeckleFlatmap(int phaseInd);
+        cv::Mat getProbeGainSpeckleFlatmap(int gainInd);
         cv::Mat getFinalSpeckleFlatmap(double gain=DEFAULTGAIN);
         void generateSimProbeSpeckle(int phaseInd);
         void generateSimFinalSpeckle(double gain);

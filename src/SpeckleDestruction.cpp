@@ -61,7 +61,7 @@ void speckNullLoop()
     std::chrono::microseconds rawTime;
     uint64_t timestamp;
 
-    for(int n=0; n<5; n++)
+    for(int n=0; n<10; n++)
     {
         std::cout << "================BEGIN LOOP ITERATION=================" << std::endl;
         rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
@@ -92,17 +92,51 @@ void speckNullLoop()
 
         }
 
-        std::cout << "Nulling Speckles..." << std::endl;
-        speckNull.calculateFinalPhases();
-        speckNull.generateNullingFlatmap(cfgParams.get<double>("NullingParams.defaultGain"));
-        speckNull.loadNullingSpeckles();
-        speckNull.clearSpeckleObjects();
+        if(cfgParams.get<bool>("NullingParams.useGainLoop"))
+        {
+            speckNull.calculateFinalPhases();
+
+            for(int i=0; i<4; i++)
+            {
+                std::cout << "-------Begin Gain Loop Iteration-------" << std::endl;
+                std::cout << "generating gain probe flatmap" << std::endl;
+                speckNull.generateProbeGainFlatmap(i);
+                std::cout << "loading probe centoffs" << std::endl;
+                speckNull.loadProbeSpeckles();
+                rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
+                timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
+                std::cout << "Raw TS: " << timestamp << std::endl;
+                std::cout << "Starting Integration..." << std::endl;
+                speckNull.updateImage(timestamp+200);
+                speckNull.measureSpeckleGainIntensities(i);
+                std::cout << std::endl << std::endl << std::endl;
+
+            }
+
+            std::cout << "Calculating optimal gain..." << std::endl;
+            speckNull.calculateFinalGains();
+            speckNull.generateNullingFlatmap();
+            speckNull.loadNullingSpeckles();
+            speckNull.clearSpeckleObjects();
+
+        }
+
+
+        else
+        {
+            std::cout << "Nulling Speckles..." << std::endl;
+            speckNull.calculateFinalPhases();
+            speckNull.generateNullingFlatmap(cfgParams.get<double>("NullingParams.defaultGain"));
+            speckNull.loadNullingSpeckles();
+            speckNull.clearSpeckleObjects();
+        
+        }
         std::cout << std::endl << std::endl << std::endl;
         
-        // std::string dummy;
-        // std::cout << "Press any key...";
-        // std::getline(std::cin, dummy);
-        // std::cout << std::endl;
+        std::string dummy;
+        std::cout << "Press any key...";
+        std::getline(std::cin, dummy);
+        std::cout << std::endl;
 
     }
 
@@ -142,7 +176,7 @@ void realSpeckleDetectionTest()
     std::chrono::microseconds rawTime, elapsedTime;
     uint64_t timestamp;
     int i;
-    for(i=0; i<3; i++)
+    for(i=0; i<1; i++)
     {
         std::string dummy;
         std::cout << "Press any key...";
@@ -210,13 +244,14 @@ void simpleCentoffsLoadSaveTest()
     std::cout << "grabbing centoffs" << std::endl;
     (*p3k).grabCurrentCentoffs();
     std::cout << "loading centoffs" << std::endl;
-    cv::Point2i coords(25,20);
+    cv::Point2i coords(35,0);
     std::cout << "coords: " << coords.x << " "  << coords.y << std::endl;
     cv::Point2d kvecs = calculateKVecs(coords, cfgParams);
     //kvecs = cv::Point2d(67.77,25.14);
     std::cout << "Kvecs: " << kvecs.x << " " << kvecs.y << std::endl;
-    newFlatmap = generateFlatmap(kvecs, 100, 0);
-    cv::Point2d kvecs2 = cv::Point2d(35,35);
+    newFlatmap = generateFlatmap(kvecs, 100, 3.1415);
+    cv::Point2i coords2 = cv::Point2d(70,0);
+    cv::Point2d kvecs2 = calculateKVecs(coords2, cfgParams);
     cv::Mat newFlatmap2 = generateFlatmap(kvecs2, 100, 0);
     newFlatmap += newFlatmap2;
     (*p3k).loadNewCentoffsFromFlatmap(newFlatmap);    
@@ -225,8 +260,8 @@ void simpleCentoffsLoadSaveTest()
 
 int main()
 {
-    //simpleCentoffsLoadSaveTest();
-    speckNullLoop();
+    simpleCentoffsLoadSaveTest();
+    //speckNullLoop();
     //simpleCentoffsLoadSaveTest();
     //realSpeckleDetectionTest();
     //simpleCentoffsLoadSaveTest();

@@ -25,6 +25,8 @@ class ImageGrabber
         cv::Mat badPixMaskCtrl;
         cv::Mat flatWeights;
         cv::Mat flatWeightsCtrl;
+        cv::Mat darkSub;
+        cv::Mat darkSubCtrl;
         boost::interprocess::shared_memory_object shmImgBuffer;
         boost::interprocess::mapped_region imgBufferRegion;
         boost::interprocess::shared_memory_object shmTs;
@@ -40,6 +42,7 @@ class ImageGrabber
         uint64_t *tsPtr;
         char *badPixArr;
         char *flatCalArr;
+        char *darkSubArr;
         int xCenter;
         int yCenter;
         int xCtrlStart;
@@ -61,10 +64,13 @@ class ImageGrabber
         void grabControlRegion();
         void copyControlRegion();
         void setCtrlRegion();
+
         void loadBadPixMask();
         void loadFlatCal();
+        void loadDarkSub();
         void badPixFiltCtrlRegion();
         void applyFlatCalCtrlRegion();
+        void applyDarkSubCtrlRegion();
 
 };
 #endif
