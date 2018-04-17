@@ -11,7 +11,7 @@ SpeckleNuller::SpeckleNuller(boost::property_tree::ptree &ptree, bool vbose)
     cfgParams = ptree;
     int ctrlRegionXSize = cfgParams.get<int>("ImgParams.xCtrlEnd") - cfgParams.get<int>("ImgParams.xCtrlStart");
     int ctrlRegionYSize = cfgParams.get<int>("ImgParams.yCtrlEnd") - cfgParams.get<int>("ImgParams.yCtrlStart");
-    image.create(ctrlRegionYSize, ctrlRegionXSize, CV_16UC1);
+    image.create(ctrlRegionYSize, ctrlRegionXSize, CV_64FC1);
     verbose = vbose;
     imgGrabber = ImageGrabber(ptree);
     std::cout << "Creating P3K Object" << std::endl;
@@ -39,18 +39,23 @@ void SpeckleNuller::updateCurFlatmap()
 
 std::vector<ImgPt> SpeckleNuller::detectSpeckles()
 {
+    //scale image parameters by usFactor, since image is upsampled
+    int speckleWindow = cfgParams.get<int>("NullingParams.speckleWindow")*cfgParams.get<int>("NullingParams.usFactor");
+    int apertureRadius = cfgParams.get<int>("NullingParams.apertureRadius")*cfgParams.get<int>("NullingParams.usFactor");
+    int exclusionZone = cfgParams.get<int>("NullingParams.exclusionZone")*cfgParams.get<int>("NullingParams.usFactor");
+
     //Find local maxima within cfgParams.get<int>("NullingParams.speckleWindow") size window
-    cv::Mat kernel = cv::Mat::ones(cfgParams.get<int>("NullingParams.speckleWindow"), cfgParams.get<int>("NullingParams.speckleWindow"), CV_8UC1);
+    cv::Mat kernel = cv::Mat::ones(speckleWindow, speckleWindow, CV_8UC1);
     cv::Mat maxFiltIm, isMaximum;
     std::vector<cv::Point2i> maxima;
     std::vector<cv::Point2i> speckleLocs;
     std::vector<ImgPt> maxImgPts;
 
     if(cfgParams.get<bool>("NullingParams.useBoxBlur"))
-        cv::blur(image.clone(), image, cv::Size2i(cfgParams.get<int>("NullingParams.speckleWindow"), cfgParams.get<int>("NullingParams.speckleWindow")));
+        cv::blur(image.clone(), image, cv::Size2i(speckleWindow, speckleWindow));
     
     if(cfgParams.get<bool>("NullingParams.useGaussianBlur"))
-        cv::blur(image.clone(), image, cv::Size2i(cfgParams.get<int>("NullingParams.speckleWindow"), cfgParams.get<int>("NullingParams.speckleWindow")));
+        cv::blur(image.clone(), image, cv::Size2i(speckleWindow, speckleWindow));
 
     cv::dilate(image, maxFiltIm, kernel);
     cv::compare(image, maxFiltIm, isMaximum, cv::CMP_EQ);
@@ -64,8 +69,8 @@ std::vector<ImgPt> SpeckleNuller::detectSpeckles()
         tempPt.coordinates = *it;
         tempPt.intensity = image.at<ushort>(*it);
         if(tempPt.intensity != 0)
-            if((tempPt.coordinates.x < (image.cols-cfgParams.get<int>("NullingParams.apertureRadius"))) && (tempPt.coordinates.x > cfgParams.get<int>("NullingParams.apertureRadius"))
-                && (tempPt.coordinates.y < (image.rows-cfgParams.get<int>("NullingParams.apertureRadius"))) && (tempPt.coordinates.y > cfgParams.get<int>("NullingParams.apertureRadius")))
+            if((tempPt.coordinates.x < (image.cols-apertureRadius)) && (tempPt.coordinates.x > apertureRadius)
+                && (tempPt.coordinates.y < (image.rows-apertureRadius)) && (tempPt.coordinates.y > apertureRadius))
             maxImgPts.push_back(tempPt);
 
     }
@@ -88,7 +93,7 @@ std::vector<ImgPt> SpeckleNuller::detectSpeckles()
             // std::cout << "maxImgPts0" << maxImgPts[0].coordinates << std::endl;
             // std::cout << "kt " << (*kt).coordinates << std::endl;
             // std::cout << "maxImgPtsend " << (*(maxImgPts.end()-1)).coordinates << std::endl;
-            if(ptDist <= cfgParams.get<int>("NullingParams.exclusionZone"))
+            if(ptDist <= exclusionZone)
             {
                 //std::cout << "pdist" << ptDist << std::endl;
                 maxImgPts.erase(kt);

@@ -11,8 +11,8 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
 
-#define DONEIMGSEM "/speckNullDoneImg1"
-#define TAKEIMGSEM "/speckNullTakeImg1"
+#define DONEIMGSEM "/speckNullDoneImg"
+#define TAKEIMGSEM "/speckNullTakeImg"
 
 #ifndef IMAGEGRABBER_H
 #define IMAGEGRABBER_H
@@ -57,7 +57,7 @@ class ImageGrabber
         void startIntegrating(uint64_t startts);
         cv::Mat& getCtrlRegionImage();
         cv::Mat& getRawImageShm();
-        void displayImage(bool showControlRegion=false);
+        void displayImage(bool makePlot=false);
         void changeCenter(int xCent, int yCent);
 
     private:
@@ -69,6 +69,7 @@ class ImageGrabber
         void loadFlatCal();
         void loadDarkSub();
         void badPixFiltCtrlRegion();
+        void gaussianBadPixFilt();
         void applyFlatCalCtrlRegion();
         void applyDarkSubCtrlRegion();
 

@@ -72,7 +72,8 @@ void ImageGrabber::readNextImage()
     if(cfgParams.get<bool>("ImgParams.useFlatCal"))
         applyFlatCalCtrlRegion();
     if(cfgParams.get<bool>("ImgParams.useBadPixMask"))
-        badPixFiltCtrlRegion();
+        //badPixFiltCtrlRegion();
+        gaussianBadPixFilt();
 
 }
 
@@ -83,7 +84,7 @@ void ImageGrabber::startIntegrating(uint64_t startts)
 
 }
 
-void ImageGrabber::grabControlRegion()
+void ImageGrabber::grabControlRegion() //DEPRECATED B/C ctrlRegionImage is now a float64
 {
     ctrlRegionImage = cv::Mat(rawImageShm, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
 
@@ -92,7 +93,7 @@ void ImageGrabber::grabControlRegion()
 void ImageGrabber::copyControlRegion()
 {
     cv::Mat ctrlRegionTmp = cv::Mat(rawImageShm, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
-    ctrlRegionImage = ctrlRegionTmp.clone();
+    ctrlRegionTmp.convertTo(ctrlRegionImage, CV_64FC1);
 
 }
 
@@ -161,6 +162,7 @@ void ImageGrabber::loadDarkSub()
     darkSubFile.read(darkSubArr, 2*IMXSIZE*IMYSIZE);
     darkSub = cv::Mat(IMYSIZE, IMXSIZE, CV_16UC1, darkSubArr);
     darkSubCtrl = cv::Mat(darkSub, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
+    darkSubCtrl.convertTo(darkSubCtrl, CV_64FC1);
 
 }
 
@@ -173,13 +175,32 @@ void ImageGrabber::badPixFiltCtrlRegion()
 
 }
 
+void ImageGrabber::gaussianBadPixFilt()
+{
+    //remove bad pixels
+    cv::Mat badPixMaskCtrlInv = (~badPixMaskCtrl)&1;
+    badPixMaskCtrlInv.convertTo(badPixMaskCtrlInv, CV_64FC1);
+    ctrlRegionImage = ctrlRegionImage.mul(badPixMaskCtrlInv);
+
+    //upsample
+    cv::Mat ctrlRegionImageUS, badPixMaskCtrlInvUS;
+    cv::resize(ctrlRegionImage, ctrlRegionImageUS, cv::Size(0,0), cfgParams.get<int>("ImgParams.usFactor"), cfgParams.get<int>("ImgParams.usFactor"), cv::INTER_NEAREST);
+    cv::resize(badPixMaskCtrlInv, badPixMaskCtrlInvUS, cv::Size(0,0), cfgParams.get<int>("ImgParams.usFactor"), cfgParams.get<int>("ImgParams.usFactor"), cv::INTER_NEAREST);
+
+    //gaussian blur
+    cv::GaussianBlur(ctrlRegionImageUS, ctrlRegionImageUS, cv::Size(0,0), cfgParams.get<double>("ImgParams.lambdaOverD")*cfgParams.get<double>("ImgParams.usFactor")*0.42);
+    cv::GaussianBlur(badPixMaskCtrlInvUS, badPixMaskCtrlInvUS, cv::Size(0,0), cfgParams.get<double>("ImgParams.lambdaOverD")*cfgParams.get<double>("ImgParams.usFactor")*0.42);
+    badPixMaskCtrlInvUS.setTo(100000, badPixMaskCtrlInvUS<=0.05); //replace with really big number so we're not dividing by something small
+    ctrlRegionImage = ctrlRegionImageUS.mul(1/badPixMaskCtrlInvUS);
+
+}
+
+     
+
 void ImageGrabber::applyFlatCalCtrlRegion()
 {
     std::cout<<"applying flat" << std::endl;
-    cv::Mat ctrlRegionImageDouble;
-    ctrlRegionImage.convertTo(ctrlRegionImageDouble, CV_64FC1);
-    ctrlRegionImageDouble = ctrlRegionImageDouble.mul(flatWeightsCtrl);
-    ctrlRegionImageDouble.convertTo(ctrlRegionImage, CV_16UC1);
+    ctrlRegionImage = ctrlRegionImage.mul(flatWeightsCtrl);
     //std::cout << ctrlRegionImage << std::endl;
 
 }
@@ -190,21 +211,29 @@ void ImageGrabber::applyDarkSubCtrlRegion()
 
 }
 
-void ImageGrabber::displayImage(bool showControlRegion)
+void ImageGrabber::displayImage(bool makePlot)
 {
     //std::cout << "rawImageShm " << rawImageShm << std::endl;
     //cv::namedWindow("DARKNESS Sim Image", cv::WINDOW_NORMAL);
     //std::cout << "badPixMaskCtrl" << badPixMaskCtrl << std::endl;
-    if(showControlRegion)
-    {
      //   cv::imshow("DARKNESS Sim Image", 10*ctrlRegionImage); 
-        std::cout << ctrlRegionImage << std::endl;
+    cv::Mat ctrlRegionDispImage;
+    ctrlRegionImage.convertTo(ctrlRegionDispImage, CV_16UC1);
+    std::cout << ctrlRegionDispImage << std::endl;
+    std::cout << "ctrl region size " << ctrlRegionDispImage.size << std::endl;
+
+    
+    if(makePlot)
+    {
+        double maxVal;
+        double minVal;
+        cv::minMaxLoc(ctrlRegionImage, &minVal, &maxVal);
+        cv::namedWindow("DARKNESS Image", cv::WINDOW_NORMAL);
+        cv::imshow("DARKNESS Image", ctrlRegionImage/maxVal);
+        //std::cout << rawImageShm << std::endl;
+        cv::waitKey(0);
 
     }
-    else
-        cv::imshow("DARKNESS Sim Image", 10*rawImageShm);
-        //std::cout << rawImageShm << std::endl;
-    //cv::waitKey(0);
 
 }
 
