@@ -11,8 +11,8 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
 
-#define DONEIMGSEM "/speckNullDoneImg1"
-#define TAKEIMGSEM "/speckNullTakeImg1"
+#define DONEIMGSEM "/speckNullDoneImg"
+#define TAKEIMGSEM "/speckNullTakeImg"
 
 #ifndef IMAGEGRABBER_H
 #define IMAGEGRABBER_H
@@ -96,7 +96,7 @@ class ImageGrabber
         * Plots the image (or whatever you modify it to do!)
         * @param showControlRegion if true, plots just the control region, else plots the full image.
         **/
-        void displayImage(bool showControlRegion=false);
+        void displayImage(bool makePlot=false);
         
         /**
         * Changes the location of the central PSF. This is important b/c control region is defined
@@ -136,11 +136,15 @@ class ImageGrabber
         * Applies bad pixel mask to control region. Currently a simple median filter on surrounding pixels.
         **/
         void badPixFiltCtrlRegion();
+<<<<<<< HEAD
         
         /**
         * Applies flat calibration to control region. 
         * Element-wise multiplies ctrlRegionImage by flatWeightsCtrl
         **/
+=======
+        void gaussianBadPixFilt();
+>>>>>>> a286aded8f846786f3eeb5ebc80e40b329101ec4
         void applyFlatCalCtrlRegion();
         
         /**
