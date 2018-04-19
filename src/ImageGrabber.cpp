@@ -17,6 +17,12 @@ ImageGrabber::ImageGrabber(boost::property_tree::ptree &ptree)
     //shmTs.truncate(sizeof(unsigned long));
     tsMemRegion = boost::interprocess::mapped_region(shmTs, boost::interprocess::read_write);
     tsPtr = (uint64_t*)tsMemRegion.get_address();
+
+    std::cout << "Opening Int Time Buffer..." << std::endl;
+    shmIntTime = boost::interprocess::shared_memory_object(boost::interprocess::open_only, "/speckNullIntTime", boost::interprocess::read_write);
+    //shmIntTime.truncate(sizeof(unsigned long));
+    intTimeMemRegion = boost::interprocess::mapped_region(shmIntTime, boost::interprocess::read_write);
+    intTimePtr = (uint64_t*)intTimeMemRegion.get_address();
     
     std::cout << "Opening Semaphores..." << std::endl;
 //    sem_unlink(doneImgSemName);
@@ -80,6 +86,8 @@ void ImageGrabber::readNextImage()
 void ImageGrabber::startIntegrating(uint64_t startts)
 {
     *tsPtr = startts;
+    *intTimePtr = (uint64_t)(cfgParams.get<double>("ImgParams.integrationTime")*2);
+    std::cout << "int time buff: " << *intTimePtr << std::endl;
     (*takeImgSemPtr).post();
 
 }

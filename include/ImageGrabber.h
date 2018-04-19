@@ -36,6 +36,8 @@ class ImageGrabber
         boost::interprocess::mapped_region imgBufferRegion; //Memory mapped region object for raw image
         boost::interprocess::shared_memory_object shmTs; //Shared memory object for start timestamp
         boost::interprocess::mapped_region tsMemRegion; //Memory mapped region object for start timestamp
+        boost::interprocess::shared_memory_object shmIntTime; //Shared memory object for integration time
+        boost::interprocess::mapped_region intTimeMemRegion; //Memory mapped region object for integration time
         boost::interprocess::named_semaphore *doneImgSemPtr; //Pointer to "done image" semaphore
         boost::interprocess::named_semaphore *takeImgSemPtr; //Pointer to "take image" semaphore
 
@@ -44,7 +46,8 @@ class ImageGrabber
         //sem_t *doneImgSem;
         //sem_t *takeImgSem;
         uint16_t *imgArr; //Shared memory buffer containing raw MKID image
-        uint64_t *tsPtr; //Shared memory buffer containing 
+        uint64_t *tsPtr; //Shared memory buffer containing start timestamp for image
+        uint64_t *intTimePtr; //Shared memory buffer containing integration time (in half ms)
         char *badPixArr; //Buffer containing bad pixel mask
         char *flatCalArr; //Buffer containing flat cal image
         char *darkSubArr; //Buffer containing dark image
