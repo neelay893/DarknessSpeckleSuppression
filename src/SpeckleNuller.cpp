@@ -276,7 +276,8 @@ void SpeckleNuller::generateProbeFlatmap(int phaseInd)
 void SpeckleNuller::generateProbeGainFlatmap(int gainInd)
 {
     std::vector<Speckle>::iterator it;
-    probeFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
+    //probeFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
+    probeFlatmap = nullingFlatmap.clone()
 
     for(it = specklesList.begin(); it < specklesList.end(); it++)
     {

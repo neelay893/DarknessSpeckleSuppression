@@ -16,6 +16,11 @@
 
 #ifndef IMAGEGRABBER_H
 #define IMAGEGRABBER_H
+/*
+ * Interfaces with PacketMaster (MKID readout stream parsing code) to acquire images 
+ * on-demand at a specified timestamp. Also does basic image processing
+ * (dark/flat application and bad pixel masking). 
+ */
 class ImageGrabber
 {
     private:
@@ -136,15 +141,17 @@ class ImageGrabber
         * Applies bad pixel mask to control region. Currently a simple median filter on surrounding pixels.
         **/
         void badPixFiltCtrlRegion();
-<<<<<<< HEAD
+
+        /**
+        * Applies gaussian blur w/ width lambda/D, normalized by blur of good pixel mask. Should have
+        * better performance than simple bad pixel filter
+        */
+        void gaussianBadPixFilt();
         
         /**
         * Applies flat calibration to control region. 
         * Element-wise multiplies ctrlRegionImage by flatWeightsCtrl
         **/
-=======
-        void gaussianBadPixFilt();
->>>>>>> a286aded8f846786f3eeb5ebc80e40b329101ec4
         void applyFlatCalCtrlRegion();
         
         /**
