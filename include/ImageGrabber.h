@@ -25,7 +25,8 @@ class ImageGrabber
 {
     private:
         cv::Mat rawImageShm; //Stores raw MKID image. Wrapper for shared memory.
-        cv::Mat ctrlRegionImage; //Stores image of control region. 
+        cv::Mat ctrlRegionImage; //Stores (processed) image of control region. 
+        cv::Mat fullImage; //Stores processed image. 
         cv::Mat badPixMask; //Bad pixel mask (1 if bad)
         cv::Mat badPixMaskCtrl; //Bad pixel mask for control region
         cv::Mat flatWeights; //Image of flat weights (should multiply image by this)
@@ -74,15 +75,25 @@ class ImageGrabber
         
         /**
         * Reads in the next image from shared memory (provided by PacketMaster in normal operation).
-        * Waits for *doneImgSemPtr, then updates rawImageShm and ctrlRegionImage w/ new image. Applies
-        * any desired calibrations.
+        * Waits for *doneImgSemPtr, then updates rawImageShm with new image. Copies image into ctrlRegionImage
+        * and fullImage arrays.
         **/
         void readNextImage();
 
         /**
+        * Runs image processing steps specified in config file on ctrlRegionImage.
+        **/
+        void processCtrlRegion();
+
+        /**
+        * Runs image processing steps specified in config file on fullImage.
+        **/
+        void processFullImage();
+
+        /**
         * Sends signal to packetmaster (or simulation) to start taking an image;
         * i.e. increments *takeImgSemPtr. If interfacing w/ PacketMaster, image will consist of photons
-        * tagged w/ timestamps between startts and startts + intTime, where intTime is hardcoded in PacketMaster.
+        * tagged w/ timestamps between startts and startts + intTime, where intTime is specified in cfgParams.
         * @param startts timestamp in seconds since Jan 1 00:00 of current year. Placed in shmTs shared memory space.
         */
         void startIntegrating(uint64_t startts);
@@ -99,6 +110,14 @@ class ImageGrabber
         * @return reference to array image (cv::Mat object w/ dtype CV_16UC)
         **/
         cv::Mat& getRawImageShm();
+
+        /**
+        * Returns the most recently taken image
+        **/
+        cv::Mat& getFullImage();
+
+        cv::Mat& getBadPixMask();
+        cv::Mat& getBadPixMaskCtrl();
 
         /**
         * Plots the image (or whatever you modify it to do!)
@@ -125,7 +144,13 @@ class ImageGrabber
         * Assigns ctrlRegionImage to relevant subset of the raw image. Creates a copy of the subarray,
         * unlike grabControlRegion().
         **/
-        void copyControlRegion();
+        void copyControlRegionFromShm();
+
+        /**
+        * Assigns fullImage to the raw image in shared memory. Creates a copy of the subarray,
+        * unlike grabControlRegion().
+        **/
+        void copyFullImageFromShm();
         
         /**
         * Defines the boundaries of the control region, based on center location and coordinates specified in
@@ -149,14 +174,26 @@ class ImageGrabber
         * Applies gaussian blur w/ width lambda/D, normalized by blur of good pixel mask. Should have
         * better performance than simple bad pixel filter
         */
-        void gaussianBadPixFilt();
+        //void gaussianBadPixFilt();
         
+        /**
+        * Applies flat calibration to full image. 
+        * Element-wise multiplies ctrlRegionImage by flatWeightsCtrl
+        **/
+        void applyFlatCal();
+
         /**
         * Applies flat calibration to control region. 
         * Element-wise multiplies ctrlRegionImage by flatWeightsCtrl
         **/
         void applyFlatCalCtrlRegion();
         
+        /**
+        * Applies dark subtraction to full image.
+        * Subtracts darkSubCtrl from ctrlRegionImage.
+        **/
+        void applyDarkSub();
+
         /**
         * Applies dark subtraction to control region.
         * Subtracts darkSubCtrl from ctrlRegionImage.

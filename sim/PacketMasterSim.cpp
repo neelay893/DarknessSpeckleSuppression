@@ -15,6 +15,7 @@ std::string imageDir = "/home/neelay/SpeckleNulling/DarknessSpeckleSuppression/d
 std::string imgReadyFn = imageDir + "IMG_READY";
 char *imgArr;
 char *tsPtr;
+char *intTimePtr;
 
 void getNextImage(int timestamp)
 {
@@ -39,6 +40,12 @@ int main()
     shmTs.truncate(sizeof(unsigned long));
     boost::interprocess::mapped_region tsMemRegion(shmTs, boost::interprocess::read_write);
     tsPtr = (char*)tsMemRegion.get_address();
+
+    std::cout << "opening int time buffer" << std::endl;
+    boost::interprocess::shared_memory_object shmIntTime(boost::interprocess::open_or_create, "/speckNullIntTime", boost::interprocess::read_write);
+    shmIntTime.truncate(sizeof(unsigned long));
+    boost::interprocess::mapped_region intTimeMemRegion(shmIntTime, boost::interprocess::read_write);
+    intTimePtr = (char*)intTimeMemRegion.get_address();
     
     std::cout << "initializing semaphores " << S_IWOTH << std::endl;
     sem_unlink(doneImgSemName);
@@ -94,6 +101,7 @@ int main()
 
     boost::interprocess::shared_memory_object::remove("speckNullImgBuffer");
     boost::interprocess::shared_memory_object::remove("speckNullTimestamp");
+    boost::interprocess::shared_memory_object::remove("speckNullIntTime");
     sem_destroy(doneImgSem);
     sem_destroy(takeImgSem);
 

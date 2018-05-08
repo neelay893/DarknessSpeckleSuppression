@@ -17,7 +17,7 @@ typedef double Pixel;
 * @param coords Speckle coordinates on array
 * @param cfgParams Configuration parameters. Relevant ones are lambda/D and PSF location on the array
 **/
-cv::Point2d calculateKVecs(const cv::Point2i &coords, boost::property_tree::ptree &cfgParams);
+cv::Point2d calculateKVecs(const cv::Point2d &coords, boost::property_tree::ptree &cfgParams);
 
 /**
 * Generates a DM flatmap from speckle kvecs, intensity, and phase. Calibration is provided by config params

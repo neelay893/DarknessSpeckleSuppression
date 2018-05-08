@@ -45,6 +45,14 @@ ImageGrabber::ImageGrabber(boost::property_tree::ptree &ptree)
 
     }
 
+    //initialize bad pixel mask to 0
+    else
+    {
+        badPixMask = cv::Mat(IMYSIZE, IMXSIZE, CV_16UC1, 0);
+        badPixMaskCtrl = cv::Mat(badPixMask, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
+
+    }
+
     if(cfgParams.get<bool>("ImgParams.useFlatCal"))
     {
         flatCalArr = new char[8*IMXSIZE*IMYSIZE]; //pack flat cal into 64 bit double array
@@ -72,14 +80,27 @@ void ImageGrabber::readNextImage()
     //std::cout << "Creating OpenCV object..." << std::endl;
     //std::cout << badPixMask << std::endl;
     rawImageShm = cv::Mat(cv::Size(IMXSIZE, IMYSIZE), CV_16UC1, imgArr);
-    copyControlRegion();
+    copyControlRegionFromShm();
+    copyFullImageFromShm();
+
+}
+
+void ImageGrabber::processCtrlRegion()
+{
     if(cfgParams.get<bool>("ImgParams.useDarkSub"))
         applyDarkSubCtrlRegion();
     if(cfgParams.get<bool>("ImgParams.useFlatCal"))
         applyFlatCalCtrlRegion();
-    if(cfgParams.get<bool>("ImgParams.useBadPixMask"))
-        //badPixFiltCtrlRegion();
-        gaussianBadPixFilt();
+
+}
+
+void ImageGrabber::processFullImage()
+{
+    if(cfgParams.get<bool>("ImgParams.useDarkSub"))
+        applyDarkSub();
+    if(cfgParams.get<bool>("ImgParams.useFlatCal"))
+        applyFlatCal();
+    ctrlRegionImage = cv::Mat(fullImage, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
 
 }
 
@@ -98,10 +119,17 @@ void ImageGrabber::grabControlRegion() //DEPRECATED B/C ctrlRegionImage is now a
 
 }
 
-void ImageGrabber::copyControlRegion()
+void ImageGrabber::copyControlRegionFromShm()
 {
     cv::Mat ctrlRegionTmp = cv::Mat(rawImageShm, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
     ctrlRegionTmp.convertTo(ctrlRegionImage, CV_64FC1);
+
+}
+
+void ImageGrabber::copyFullImageFromShm()
+{
+    cv::Mat imageTmp = rawImageShm.clone();
+    imageTmp.convertTo(fullImage, CV_64FC1);
 
 }
 
@@ -111,9 +139,27 @@ cv::Mat &ImageGrabber::getCtrlRegionImage()
 
 }
 
+cv::Mat &ImageGrabber::getFullImage()
+{
+    return fullImage;
+
+}
+
 cv::Mat &ImageGrabber::getRawImageShm()
 {
     return rawImageShm;
+
+}
+
+cv::Mat &ImageGrabber::getBadPixMask()
+{
+    return badPixMask;
+
+}
+
+cv::Mat &ImageGrabber::getBadPixMaskCtrl()
+{
+    return badPixMaskCtrl;
 
 }
 
@@ -171,6 +217,7 @@ void ImageGrabber::loadDarkSub()
     darkSub = cv::Mat(IMYSIZE, IMXSIZE, CV_16UC1, darkSubArr);
     darkSubCtrl = cv::Mat(darkSub, cv::Range(yCtrlStart, yCtrlEnd), cv::Range(xCtrlStart, xCtrlEnd));
     darkSubCtrl.convertTo(darkSubCtrl, CV_64FC1);
+    darkSub.convertTo(darkSub, CV_64FC1);
 
 }
 
@@ -183,33 +230,27 @@ void ImageGrabber::badPixFiltCtrlRegion()
 
 }
 
-void ImageGrabber::gaussianBadPixFilt()
+
+void ImageGrabber::applyFlatCal()
 {
-    //remove bad pixels
-    cv::Mat badPixMaskCtrlInv = (~badPixMaskCtrl)&1;
-    badPixMaskCtrlInv.convertTo(badPixMaskCtrlInv, CV_64FC1);
-    ctrlRegionImage = ctrlRegionImage.mul(badPixMaskCtrlInv);
-
-    //upsample
-    cv::Mat ctrlRegionImageUS, badPixMaskCtrlInvUS;
-    cv::resize(ctrlRegionImage, ctrlRegionImageUS, cv::Size(0,0), cfgParams.get<int>("ImgParams.usFactor"), cfgParams.get<int>("ImgParams.usFactor"), cv::INTER_NEAREST);
-    cv::resize(badPixMaskCtrlInv, badPixMaskCtrlInvUS, cv::Size(0,0), cfgParams.get<int>("ImgParams.usFactor"), cfgParams.get<int>("ImgParams.usFactor"), cv::INTER_NEAREST);
-
-    //gaussian blur
-    cv::GaussianBlur(ctrlRegionImageUS, ctrlRegionImageUS, cv::Size(0,0), cfgParams.get<double>("ImgParams.lambdaOverD")*cfgParams.get<double>("ImgParams.usFactor")*0.42);
-    cv::GaussianBlur(badPixMaskCtrlInvUS, badPixMaskCtrlInvUS, cv::Size(0,0), cfgParams.get<double>("ImgParams.lambdaOverD")*cfgParams.get<double>("ImgParams.usFactor")*0.42);
-    badPixMaskCtrlInvUS.setTo(100000, badPixMaskCtrlInvUS<=0.05); //replace with really big number so we're not dividing by something small
-    ctrlRegionImage = ctrlRegionImageUS.mul(1/badPixMaskCtrlInvUS);
+    std::cout<<"applying flat" << std::endl;
+    fullImage = fullImage.mul(flatWeightsCtrl);
+    //std::cout << ctrlRegionImage << std::endl;
 
 }
-
      
 
 void ImageGrabber::applyFlatCalCtrlRegion()
 {
-    std::cout<<"applying flat" << std::endl;
+    std::cout<<"applying flat to control region" << std::endl;
     ctrlRegionImage = ctrlRegionImage.mul(flatWeightsCtrl);
     //std::cout << ctrlRegionImage << std::endl;
+
+}
+
+void ImageGrabber::applyDarkSub()
+{
+    fullImage = fullImage - darkSub;
 
 }
 

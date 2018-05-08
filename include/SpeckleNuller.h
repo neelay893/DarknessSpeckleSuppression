@@ -4,6 +4,7 @@
 #include "ImageGrabber.h"
 #include "Speckle.h"
 #include "P3KCom.h"
+#include "imageTools.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
 
@@ -15,8 +16,8 @@
 **/
 struct ImgPt
 {
-    cv::Point2i coordinates;
-    unsigned short intensity;
+    cv::Point2d coordinates;
+    double intensity;
     bool operator<(ImgPt &rPt){return intensity > rPt.intensity;}
 
 };
@@ -30,10 +31,11 @@ class SpeckleNuller
 {
     private: 
         cv::Mat image; //Last MKID image obtained from PacketMaster
+        cv::Mat badPixMask; //Bad pixel mask of image. Should be updated when ctrl region changes
         cv::Mat probeFlatmap; //Flatmap storing probe speckles for current iteration 
         cv::Mat nullingFlatmap; //Flatmap storing nulling speckles
-        ImageGrabber imgGrabber; //ImageGrabber instance to interface with PacketMaster
-        std::vector<Speckle> specklesList; //List of Speckle (objects) being nulled
+        //ImageGrabber imgGrabber; //ImageGrabber instance to interface with PacketMaster
+        std::vector<Speckle> specklesList, nullSpecklesList; //List of Speckle (objects) being nulled
         boost::property_tree::ptree cfgParams; //Container for configuration params
         P3KCom *p3k; //P3KCom instance for loading flatmaps/centoffs into P3K
         bool verbose; //verbosity parameter; 1 if verbose, 0 if not
@@ -52,11 +54,32 @@ class SpeckleNuller
         std::vector<ImgPt> detectSpeckles();
 
         /**
+        * Cuts out elements of maxImgPts that are within an exclusion zone 
+        * of existing speckles or each-other.
+        **/
+        void exclusionZoneCut(std::vector<ImgPt> &maxImgPts);
+
+        /**
+        * Checks whether any nulled speckles have been re-detected. If so,
+        * updates speckle state and puts back in speckles list. Removes
+        * point from maxImgPts.
+        **/
+        void updateAndCutNulledSpeckles(std::vector<ImgPt> &maxImgPts);
+
+        /**
         * Grabs a new image from packetmaster and updates current image
         * (stored in "image" array)
         * @param timestamp Start timestamp of image
         **/
-        void updateImage(uint64_t timestamp);
+        //void updateImage(uint64_t timestamp);
+        
+        /**
+        * Updates the current image (of ctrl region)
+        * @param image New image of ctrl region
+        **/
+        void updateImage(cv::Mat &newImage);
+
+        void updateBadPixMask(cv::Mat &newMask);
 
         /**
         * Creates speckle objects from a list of ImgPts; stores these
@@ -78,10 +101,17 @@ class SpeckleNuller
         * at the correct gain are assumed to have been applied in the current image.
         * @param gainInd specifies the index of the probe gain in all speckle objects (index in Speckle.gainList)
         **/
-        void measureSpeckleGainIntensities(int phaseInd);
+        void measureSpeckleGainIntensities(int gainInd);
 
         /**
-        * Calculates the nulling phase for all speckle objects.
+        * Run this right after final phase probe iteration. Updates speckle state and checks 
+        * if SNR is high enough for nulling. If so, puts speckle in nullSpecklesList. Calculates
+        * final phase and gain (if not using gain loop)
+        **/
+        void updateSpecklesAndCheckNull();
+
+        /**
+        * Calculates the nulling phase for all speckle objects. DEPRECATED - use updateSpecklesAndCheckNull()
         **/
         void calculateFinalPhases();
 
@@ -112,9 +142,8 @@ class SpeckleNuller
         void generateProbeGainFlatmap(int gainInd);
 
         /**
-        * Generates nulling flatmap for each speckle, sums them, and adds that to nullingFlatmap.
-        * If using null gain loop, use gains from that, else use default gain specified in 
-        * config params
+        * Generates nulling flatmap for each speckle in nullSpecklesList, sums them, 
+        * and adds that to nullingFlatmap.
         */
         void generateNullingFlatmap();
 
@@ -133,7 +162,7 @@ class SpeckleNuller
         * Tools for interfacing with python simulation.
         **/
         void generateSimProbeSpeckles(int phaseInd);
-        void generateSimFinalSpeckles(double gain=DEFAULTGAIN);
+        void generateSimFinalSpeckles();
 
         /**
         * Loads probe speckle flatmap into P3K.

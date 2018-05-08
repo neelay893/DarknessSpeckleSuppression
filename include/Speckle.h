@@ -6,6 +6,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include "dmTools.h"
 #include "simInterfaceTools.h"
+#include "imageTools.h"
 
 #ifndef SPECKLE_H
 #define SPECKLE_H
@@ -20,18 +21,34 @@ class Speckle
 {
     private:
         double phaseList[NPHASES]; //List of probe phases
-        double gainList[NGAINS]; //List of probe gains, if using gain loop
-        unsigned int phaseIntensities[NPHASES]; //measured speckle intensities at each probe phase
-        unsigned int gainIntensities[NGAINS]; //measured speckle intensities at each probe gain
-        unsigned int initialIntensity; //measured intensity of original speckle
+
+        double phaseIntensities[NPHASES]; //measured speckle intensities at each probe phase
+        double measPhaseIntensities[NPHASES]; //measured speckle intensities at each probe phase
+        double speckIntensity; //measured intensity of original speckle
+        double measSpeckIntensity; //measured intensity of original speckle
+        double intensityCorrectionFactor;
+        double sigmaI;
+        double measSigmaI;
+        double sigmaVis;
+        double measSigmaVis;
+        double speckVisibility;
+        double measSpeckVisibility;
+        cv::Point2d coordinates;
+        cv::Point2d measCoordinates;
+        
+        bool isNulled; //True if speckle was nulled in last iteration
+
         double finalPhase; //phase of "nulling" speckle
         double finalGain; //gain of "nulling" speckle
-        double nullingIntensity; 
-        cv::Point2i coordinates;
+        double gainIntensities[NGAINS]; //measured speckle intensities at each probe gain
+        double gainList[NGAINS]; //List of probe gains, if using gain loop
         cv::Point2d kvecs; //speckle k-vectors (spatial angular frequencies)
         cv::Mat apertureMask; //Aperture window used to measure speckle intensity
         boost::property_tree::ptree cfgParams; //container used to store configuration parameters
         void computeSpecklePhase(); //method to compute nulling phase
+        double measureIntensity(cv::Mat &image); 
+
+        bool verbose;
 
     public:
         /**
@@ -40,35 +57,40 @@ class Speckle
         * @param pt Speckle coordinates on the array
         * @param ptree Property tree of config parameters
         **/
-        Speckle(cv::Point2i &pt, boost::property_tree::ptree &ptree);
+        Speckle(cv::Point2d &pt, boost::property_tree::ptree &ptree, bool verb=true);
 
         /**
-        * Increments the measured speckle intensity at a specified probe phase by the specified
-        * amount. Use this to set probe phase speckle intensites.
+        * Measures the speckle intensity in the provided image, then sets 
+        * measPhaseIntensities[phaseInd] to this value.
         * @param phaseInd Index of probe phase.
-        * @param intensity Amount to increment probe phase intensity.
+        * @param image Image of ctrl region to use for intensity measurement
         **/
-        void incrementPhaseIntensity(int phaseInd, unsigned int intensity);
+        void measurePhaseIntensity(int phaseInd, cv::Mat &image);
 
         /**
-        * Increments the measured speckle intensity at a specified probe gain by the specified
-        * amount. Use this to set probe gain speckle intensites.
+        * Measures the speckle intensity in the provided image, then sets 
+        * gainIntensities[gainInd] to this value.
         * @param gainInd Index of probe gain.
-        * @param intensity Amount to increment probe gain intensity.
+        * @param image Image of ctrl region to use for intensity measurement
         **/
-        void incrementGainIntensity(int gainInd, unsigned int intensity);
+        void measureGainIntensity(int gainInd, cv::Mat &image);
 
         /**
-        * Sets the intensity of the original speckle.
-        * @param intensity Intensity of the speckle.
+        * Measures the speckle intensity in the provided image, then calculates
+        * sigma and sets measSpeckIntensity and measSigma
+        * @param image Image to use for intensity measurement
         **/
-        void setInitialIntensity(unsigned int intensity);
+        void measureSpeckleIntensityAndSigma(cv::Mat &image);
 
-        /**
-        * Measures the intensity of the speckle.
-        * @param image Image of control region.
-        **/
-        unsigned int measureSpeckleIntensity(cv::Mat &image);
+        void remeasureCoordinates(cv::Mat &image);
+
+        void measureIntensityCorrection(cv::Mat &badPixMask);
+
+        void updateStateEstimates();
+
+        bool checkToNull();
+
+        void updateNulledSpeckle();
 
         /**
         * Calculate the (nulling) phase of the speckle from all of
@@ -83,12 +105,6 @@ class Speckle
         * in finalGain attribute.
         **/
         void calculateFinalGain();
-
-        /* returns finalGain */
-        double getFinalGain();
-
-        /* returns finalPhase */
-        double getFinalPhase();
 
         /**
         * Returns flatmap for a probe speckle (at the original speckle's location)
@@ -110,18 +126,29 @@ class Speckle
         * specified gain.
         * @param gain Amplitude gain of applied speckle
         **/
-        cv::Mat getFinalSpeckleFlatmap(double gain=DEFAULTGAIN);
+        cv::Mat getFinalSpeckleFlatmap();
 
         /**
         * Tools for interfacing with python simulation
         **/
         void generateSimProbeSpeckle(int phaseInd);
-        void generateSimFinalSpeckle(double gain);
+        void generateSimFinalSpeckle();
+
+        void setCoordinates(cv::Point2d coords);
 
         /**
         * Return speckle location in pixel coordinates on the array.
         **/
-        cv::Point2i getCoordinates();
+        cv::Point2d getCoordinates();
+
+        /* returns finalGain */
+        double getFinalGain();
+
+        /* returns finalPhase */
+        double getFinalPhase();
+
+        double getIntensity();
+
 
 };
 #endif

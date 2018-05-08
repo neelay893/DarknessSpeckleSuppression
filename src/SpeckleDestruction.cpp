@@ -1,6 +1,5 @@
 #include <SpeckleNuller.h>
 #include <Speckle.h>
-#include <ImageGrabberSim.h>
 #include <ImageGrabber.h>
 #include <P3KCom.h>
 #include <dmTools.h>
@@ -17,41 +16,51 @@ void speckNullSimLoop()
     boost::property_tree::ptree cfgParams;
     read_info("speckNullConfig.info", cfgParams);
     SpeckleNuller speckNull(cfgParams, true);
+    ImageGrabber imgGrabber(cfgParams);
     std::vector<ImgPt> imgPts;
+    speckNull.updateBadPixMask(imgGrabber.getBadPixMaskCtrl());
 
     while(1)
     {
-         speckNull.updateImage(0);
-         std::cout << "Detecting Speckles..." << std::endl;
-         imgPts = speckNull.detectSpeckles();
-         std::cout << "Creating Speckle Objects..." << std::endl;
-         speckNull.createSpeckleObjects(imgPts);
-         std::cout << "Creating Probe Speckles..." << std::endl;
-         for(int i=0; i<4; i++)
-         {
+        imgGrabber.startIntegrating(0);
+        imgGrabber.readNextImage();
+        imgGrabber.processFullImage();
+        speckNull.updateImage(imgGrabber.getCtrlRegionImage());
+        std::cout << imgGrabber.getCtrlRegionImage() << std::endl;
+        std::cout << "Detecting Speckles..." << std::endl;
+        imgPts = speckNull.detectSpeckles();
+        speckNull.exclusionZoneCut(imgPts);
+        speckNull.updateAndCutNulledSpeckles(imgPts);
+        std::cout << "Creating Speckle Objects..." << std::endl;
+        speckNull.createSpeckleObjects(imgPts);
+        std::cout << "Creating Probe Speckles..." << std::endl;
+        for(int i=0; i<4; i++)
+        {
             speckNull.generateProbeFlatmap(i);
             speckNull.generateSimProbeSpeckles(i);
             writeDoneKvecFile();
-            speckNull.updateImage(0);
+            imgGrabber.startIntegrating(0);
+            imgGrabber.readNextImage();
+            imgGrabber.processFullImage();
+            speckNull.updateImage(imgGrabber.getCtrlRegionImage());
             speckNull.measureSpeckleProbeIntensities(i);
 
-         }
+        }
 
-         std::cout << "Nulling Speckles..." << std::endl;
-         speckNull.calculateFinalPhases();
-         speckNull.generateNullingFlatmap(0.5);
-         speckNull.generateSimFinalSpeckles(0.5);
-         writeDoneKvecFile();
-         speckNull.clearSpeckleObjects();
-         if(access("QUIT", F_OK)!=-1)
-            break;
+        std::cout << "Nulling Speckles..." << std::endl;
+        speckNull.updateSpecklesAndCheckNull();
+        speckNull.generateNullingFlatmap();
+        speckNull.generateSimFinalSpeckles();
+        writeDoneKvecFile();
+        if(access("QUIT", F_OK)!=-1)
+           break;
 
     }
 
 }
 
 
-
+/*
 void speckNullLoop()
 {
     boost::property_tree::ptree cfgParams;
@@ -140,7 +149,7 @@ void speckNullLoop()
 
     }
 
-}
+}*/
 
 void realImgGrabTest()
 { 
@@ -168,7 +177,7 @@ void realImgGrabTest()
 
 }
 
-void realSpeckleDetectionTest()
+/*void realSpeckleDetectionTest()
 { 
     boost::property_tree::ptree cfgParams;
     read_info("speckNullConfig.info", cfgParams);
@@ -194,7 +203,7 @@ void realSpeckleDetectionTest()
 
     }
 
-}
+}*/
 
 void simpleP3KTest()
 {
@@ -260,11 +269,12 @@ void simpleCentoffsLoadSaveTest()
 
 int main()
 {
-    simpleCentoffsLoadSaveTest();
+    //simpleCentoffsLoadSaveTest();
     //speckNullLoop();
     //simpleCentoffsLoadSaveTest();
     //realSpeckleDetectionTest();
     //simpleCentoffsLoadSaveTest();
+    speckNullSimLoop();
 
 
     // for(int i=0; i<100; i++)

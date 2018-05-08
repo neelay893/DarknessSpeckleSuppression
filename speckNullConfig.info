@@ -1,23 +1,24 @@
 ImgParams
 {
-    xCenter 41 ;in pixel coordinates on DARKNESS image
-    yCenter 79
+    xCenter 40 ;in pixel coordinates on DARKNESS image
+    yCenter 60
 
     lambdaOverD 2.71
+    integrationTime 1000
 
-    xCtrlStart 0 ;-20 ;relative to center, in pixel coordinates
-    xCtrlEnd  0 ;40
+    xCtrlStart -20 ;-20 ;relative to center, in pixel coordinates
+    xCtrlEnd  20 ;40
     yCtrlStart 0 ;12
     yCtrlEnd 45;45
 
     useBadPixMask true
-    badPixMaskFile /mnt/data0/Darkness/20171006/snBinFiles/badPixelMask.img
+    badPixMaskFile /home/neelay/DarknessData/20180507/snBinFiles/badPixelMask.img
     badPixFiltSize 5
 
     useFlatCal false
     flatCalFile /mnt/data0/Darkness/20171001/snBinFiles/flatWeights.bin
     
-    useDarkSub true
+    useDarkSub false
     darkSubFile /mnt/data0/Darkness/20171006/snBinFiles/darkSub.bin
 
 }
@@ -27,7 +28,7 @@ DMCal
     a 0
     b 0
     c 1; int time = 1s (2000 int time = 1s)
-    angle -1.232 ;-1.232 ;-1.252 ;-1.2055 ;-1.2321 ;-1.252 ;-1.216072;-70
+    angle 0;-1.232 ;-1.232 ;-1.252 ;-1.2055 ;-1.2321 ;-1.252 ;-1.216072;-70
 
 }
 
@@ -42,10 +43,26 @@ NullingParams
     useBoxBlur false
     useGaussianBlur false
 
-    scaleByVisibility false ;DO NOT turn both on at the same time
-    useGainLoop true
+    scaleByVisibility true ;DO NOT turn both on at the same time
+    useGainLoop false
 
-    applyRandomCoordinateOffset true
+    applyRandomCoordinateOffset false
+    usFactor 2 ;upsampling to use when detecting speckles
+
+}
+
+TrackingParams
+{
+    useVisibility true ;not used - visibility is turned on
+    vis0 0.8 ;initial visibility estimate
+    sigmaVis0 1 ;fudge factor for sigmaVis
+    iterGain 1 ;gain of new measurement in state estimate (before scaling by sigma)
+    snrThresh 10 ;minimum signal to noise 
+
+    updateCoords true ;update coordinates after nulling iteration
+    distThresh 1 ;max distance to tag speckle as the "same" as nulled speckle
+    nullIterWeight 0.1 ;state estimate penalty post-nulling. should be <=1
+
 
 }
 
@@ -70,6 +87,6 @@ P3KParams
     influenceMatFile ./p3kBinFiles/influenceMatCold.bin
     illumMatFile ./p3kBinFiles/illumMat.bin
             
-    useSSH true
+    useSSH false
 
 }
