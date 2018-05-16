@@ -31,6 +31,10 @@ void speckNullSimLoop()
         imgPts = speckNull.detectSpeckles();
         speckNull.exclusionZoneCut(imgPts);
         speckNull.updateAndCutNulledSpeckles(imgPts);
+        if(cfgParams.get<bool>("TrackingParams.enforceRedetection"))
+            speckNull.updateAndCutActiveSpeckles(imgPts);
+        else
+            speckNull.updateExistingSpeckles();
         std::cout << "Creating Speckle Objects..." << std::endl;
         speckNull.createSpeckleObjects(imgPts);
         std::cout << "Creating Probe Speckles..." << std::endl;

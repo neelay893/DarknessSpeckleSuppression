@@ -3,6 +3,7 @@
 #include <params.h>
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <random>
 #include <boost/property_tree/ptree.hpp>
 #include "dmTools.h"
 #include "simInterfaceTools.h"
@@ -43,10 +44,15 @@ class Speckle
         double gainIntensities[NGAINS]; //measured speckle intensities at each probe gain
         double gainList[NGAINS]; //List of probe gains, if using gain loop
         cv::Point2d kvecs; //speckle k-vectors (spatial angular frequencies)
+        cv::Point2d rawKvecs; //speckle k-vectors (spatial angular frequencies)
+        cv::Point2d kvecsOffs; //speckle k-vectors (spatial angular frequencies)
         cv::Mat apertureMask; //Aperture window used to measure speckle intensity
         boost::property_tree::ptree cfgParams; //container used to store configuration parameters
         void computeSpecklePhase(); //method to compute nulling phase
         double measureIntensity(cv::Mat &image); 
+
+        std::default_random_engine generator;
+        std::uniform_real_distribution<double> distribution;
 
         bool verbose;
 
@@ -87,6 +93,8 @@ class Speckle
         void measureIntensityCorrection(cv::Mat &badPixMask);
 
         void updateStateEstimates();
+
+        void applyRandomKvecOffset();
 
         bool checkToNull();
 

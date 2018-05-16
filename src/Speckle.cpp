@@ -17,7 +17,12 @@ Speckle::Speckle(cv::Point2d &pt, boost::property_tree::ptree &ptree, bool verb)
         
     apertureMask = cv::Mat::zeros(2*cfgParams.get<int>("NullingParams.apertureRadius")+1, 2*cfgParams.get<int>("NullingParams.apertureRadius")+1, CV_64F);
     cv::circle(apertureMask, cv::Point(cfgParams.get<int>("NullingParams.apertureRadius"), cfgParams.get<int>("NullingParams.apertureRadius")), cfgParams.get<int>("NullingParams.apertureRadius"), 1, -1);
-    kvecs = calculateKVecs(coordinates, cfgParams);
+    rawKvecs = calculateKVecs(coordinates, cfgParams);
+    if("NullingParams.useRandomKvecOffset")
+        applyRandomKvecOffset();
+    else
+        kvecs = rawKvecs;
+    distribution = std::uniform_real_distribution<double>(0,2);
 
     verbose = verb;
     isNulled = false;
@@ -53,8 +58,6 @@ double Speckle::measureIntensity(cv::Mat &image)
         (int)coordinates.y+cfgParams.get<int>("NullingParams.apertureRadius")+1), cv::Range(coordinates.x-cfgParams.get<int>("NullingParams.apertureRadius"), 
         coordinates.x+cfgParams.get<int>("NullingParams.apertureRadius")+1));
     speckleIm = speckleIm.mul(apertureMask);
-    std::cout << "speckle im: " << speckleIm << std::endl;
-    std::cout << "aperture im: " << apertureMask << std::endl;
     return (double)cv::sum(speckleIm)[0]/intensityCorrectionFactor;
 
 }
@@ -86,7 +89,7 @@ void Speckle::updateStateEstimates()
     if(sigmaI==-1)
         w = 0; //set sigmaI to have initial value of 1; don't use tracking parameters if first iteration
     else
-        w = (1/sigmaI)*(speckVisibility*(1-sigmaVis) + cfgParams.get<double>("TrackingParams.vis0")*sigmaVis);
+        w = (1/sigmaI)*(speckVisibility*(1-sigmaVis) + cfgParams.get<double>("TrackingParams.vis0")*sigmaVis); //weight of current state estimate
 
     if(isNulled)
     {   
@@ -95,8 +98,12 @@ void Speckle::updateStateEstimates()
 
     }
 
-    wMeas = (cfgParams.get<double>("TrackingParams.iterGain")/measSigmaI)*(measSpeckVisibility*(1-measSigmaVis) 
-        + cfgParams.get<double>("TrackingParams.vis0")*measSigmaVis);
+    if(measSpeckIntensity==0)
+        wMeas = 0;
+
+    else
+        wMeas = (cfgParams.get<double>("TrackingParams.iterGain")/measSigmaI)*(measSpeckVisibility*(1-measSigmaVis) //weight of prev measurement
+            + cfgParams.get<double>("TrackingParams.vis0")*measSigmaVis);
 
     speckIntensity = (w*speckIntensity + wMeas*measSpeckIntensity)/(w + wMeas);
     sigmaI = std::sqrt(std::pow(w,2)*std::pow(sigmaI,2) + std::pow(wMeas,2)*std::pow(measSigmaI,2))/(w + wMeas);
@@ -108,12 +115,17 @@ void Speckle::updateStateEstimates()
     speckVisibility = 2*std::sqrt(std::pow(phaseIntensities[3]-phaseIntensities[1], 2) + std::pow(phaseIntensities[0]-phaseIntensities[2], 2))/(phaseIntensities[0]
         + phaseIntensities[1] + phaseIntensities[2] + phaseIntensities[3]);
 
+
     if(verbose)
     {
         std::cout << "Updating speckle at " << coordinates.x << ", " << coordinates.y << std::endl;
         std::cout << "w:     " << w << std::endl;
         std::cout << "wMeas: " << wMeas << std::endl;
         std::cout << "Intensity: " << speckIntensity << std::endl;
+        std::cout << "Sigma I: " << sigmaI << std::endl;
+        std::cout << "Meas Sigma I: " << measSigmaI << std::endl;
+        std::cout << "phase intensities: " << phaseIntensities[0] << " " << phaseIntensities[1] << " " << phaseIntensities[2] << " " << phaseIntensities[3] << std::endl;
+        std::cout << "meas phase intensities: " << measPhaseIntensities[0] << " " << measPhaseIntensities[1] << " " << measPhaseIntensities[2] << " " << measPhaseIntensities[3] << std::endl;
         std::cout << "Measured Intensity: " << measSpeckIntensity << std::endl;
         std::cout << "Visibility: " << speckVisibility << std::endl;
         std::cout << "Meas Visibility: " << measSpeckVisibility << std::endl;
@@ -147,6 +159,9 @@ void Speckle::updateNulledSpeckle()
     for(i=0; i<NPHASES; i++)
         phaseIntensities[i] *= intensityFactor;
 
+    if(cfgParams.get<bool>("NullingParams.useRandomKvecOffset"))
+        applyRandomKvecOffset();
+
 }
 
 
@@ -154,12 +169,6 @@ void Speckle::calculateFinalPhase()
 {
     //warning: current implementation only works for 4 phase measurements (0, pi/2, pi, 3pi/2)
     finalPhase = std::atan2(((double)phaseIntensities[3]-(double)phaseIntensities[1]), ((double)phaseIntensities[0]-(double)phaseIntensities[2]));
-    if(verbose)
-    {
-        std::cout << "phase intensities: " << phaseIntensities[0] << " " << phaseIntensities[1] << " " << phaseIntensities[2] << " " << phaseIntensities[3] << std::endl;
-        std::cout << "final phase " << finalPhase << std::endl;
-
-    }
    
 }
 
@@ -190,52 +199,46 @@ void Speckle::calculateFinalGain()
 
     }
 
-    if(verbose)
-        std::cout << "final gain " << finalGain << std::endl;
-
 }
 
 
 cv::Mat Speckle::getProbeSpeckleFlatmap(int phaseInd)
 {
-    if(verbose)
-        std::cout << "Speckle probe phase: " << phaseList[phaseInd] << std::endl;
     return generateFlatmap(kvecs, speckIntensity, phaseList[phaseInd], cfgParams);
 
 }
 
 cv::Mat Speckle::getProbeGainSpeckleFlatmap(int gainInd)
 {
-    if(verbose)
-        std::cout << "Speckle probe gain: " << gainList[gainInd] << std::endl;
     return generateFlatmap(kvecs, (unsigned short)(gainList[gainInd]*speckIntensity), finalPhase + M_PI, cfgParams);
 
 }
 
 cv::Mat Speckle::getFinalSpeckleFlatmap()
 {
-    if(verbose)
-    {
-        std::cout << "Speckle null phase: " << finalPhase + M_PI << std::endl;
-        std::cout << "Speckle visibility: " << speckVisibility << std::endl;
-
-    }
-
     return generateFlatmap(kvecs, (unsigned short)(finalGain*speckIntensity), finalPhase + M_PI, cfgParams);
 
 }
 
 void Speckle::generateSimProbeSpeckle(int phaseInd)
 {
-    writeToKvecFile(kvecs, (double)std::sqrt(speckIntensity)*cfgParams.get<double>("ImgParams.integrationTime")/64, phaseList[phaseInd], 0);
+    writeToKvecFile(kvecs, (double)std::sqrt(speckIntensity/cfgParams.get<double>("ImgParams.integrationTime"))*474, phaseList[phaseInd], 0);
 
 }
 
 void Speckle::generateSimFinalSpeckle()
 {
-    writeToKvecFile(kvecs, (double)(finalGain*cfgParams.get<double>("ImgParams.integrationTime")*std::sqrt(speckIntensity)/64), -1*finalPhase + M_PI, 1);
+    writeToKvecFile(kvecs, (double)(finalGain*std::sqrt(speckIntensity/cfgParams.get<double>("ImgParams.integrationTime"))*474), -1*finalPhase + M_PI, 1);
 
 }
+
+void Speckle::applyRandomKvecOffset()
+{
+    kvecsOffs.x = 0.5*(2*M_PI/cfgParams.get<double>("ImgParams.lambdaOverD"))*(distribution(generator)-1); //currently offsets by up to 0.5 pix in x and y
+    kvecsOffs.y = 0.5*(2*M_PI/cfgParams.get<double>("ImgParams.lambdaOverD"))*(distribution(generator)-1);
+    kvecs = rawKvecs + kvecsOffs;
+
+}    
 
 double Speckle::getFinalPhase() {return finalPhase;}
 
@@ -243,6 +246,11 @@ double Speckle::getFinalGain() {return finalGain;}
 
 cv::Point2d Speckle::getCoordinates() {return coordinates;}
 
-void Speckle::setCoordinates(cv::Point2d coords) {coordinates = coords;}
+void Speckle::setCoordinates(cv::Point2d coords) 
+{
+    coordinates = coords;
+    rawKvecs = calculateKVecs(coordinates, cfgParams);
+    
+}
 
 double Speckle::getIntensity() {return speckIntensity;}

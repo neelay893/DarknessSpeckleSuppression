@@ -23,9 +23,9 @@ double calculateDMAmplitude(const cv::Point2d &kvecs, unsigned short intensity, 
 cv::Mat generateFlatmap(const cv::Point2d kvecs, unsigned short intensity, double phase, boost::property_tree::ptree &cfgParams)
 {
     double amp = calculateDMAmplitude(kvecs, intensity, cfgParams);
-    std::cout << "dmTools: generating flatmap with amplitude: " << amp << std::endl;
-    std::cout << "dmTools kvecs: " << kvecs << std::endl;
-    std::cout << "dmTools phase: " << phase << std::endl;
+    // std::cout << "dmTools: generating flatmap with amplitude: " << amp << std::endl;
+    // std::cout << "dmTools kvecs: " << kvecs << std::endl;
+    // std::cout << "dmTools phase: " << phase << std::endl;
     double phx, phy;
     cv::Mat flatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
     /*flatmap.forEach<Pixel>([&phx, &phy, amp, phase, &kvecs](Pixel &value, const int *position) -> void

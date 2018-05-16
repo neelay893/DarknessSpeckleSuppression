@@ -59,7 +59,7 @@ std::vector<ImgPt> SpeckleNuller::detectSpeckles()
 
     //scale image parameters by usFactor, since image is upsampled
     int speckleWindow = cfgParams.get<int>("NullingParams.speckleWindow")*cfgParams.get<int>("NullingParams.usFactor");
-    int apertureRadius = cfgParams.get<int>("NullingParams.apertureRadius")*cfgParams.get<int>("NullingParams.usFactor");
+    int apertureRadius = cfgParams.get<double>("NullingParams.apertureRadius");
 
     //Find local maxima within cfgParams.get<int>("NullingParams.speckleWindow") size window
     cv::Mat kernel = cv::Mat::ones(speckleWindow, speckleWindow, CV_8UC1);
@@ -86,8 +86,8 @@ std::vector<ImgPt> SpeckleNuller::detectSpeckles()
         tempPt.coordinates = cv::Point2d((double)(*it).x/usFactor, (double)(*it).y/usFactor); //coordinates in real image
         tempPt.intensity = filtImg.at<double>(*it);
         if(tempPt.intensity != 0)
-            if((tempPt.coordinates.x < (filtImg.cols-apertureRadius)) && (tempPt.coordinates.x > apertureRadius)
-                && (tempPt.coordinates.y < (filtImg.rows-apertureRadius)) && (tempPt.coordinates.y > apertureRadius))
+            if((tempPt.coordinates.x < (image.cols-apertureRadius)) && (tempPt.coordinates.x > apertureRadius)
+                && (tempPt.coordinates.y < (image.rows-apertureRadius)) && (tempPt.coordinates.y > apertureRadius))
             maxImgPts.push_back(tempPt);
 
     }
@@ -110,24 +110,29 @@ void SpeckleNuller::exclusionZoneCut(std::vector<ImgPt> &maxImgPts)
     std::vector<ImgPt>::iterator curElem, kt;
     ImgPt curPt;
     double ptDist;
-    bool curElemRemoved = false;
+    bool curElemRemoved;
     int exclusionZone = cfgParams.get<int>("NullingParams.exclusionZone");
 
     for(curElem = maxImgPts.begin(); 
         (curElem < (maxImgPts.begin()+cfgParams.get<int>("NullingParams.maxSpeckles"))) && (curElem < maxImgPts.end()); curElem++)
     {
         curPt = *curElem;
-        //Check to see if any maxImgPts are too close to a speckle
-        std::vector<Speckle>::iterator speckIter;
-        for(speckIter = specklesList.begin(); speckIter < specklesList.end(); speckIter++)
+        curElemRemoved = false;
+        //Check to see if any maxImgPts are too close to a speckle, but only if we're keeping all currently active speckles
+        if(!cfgParams.get<bool>("TrackingParams.enforceRedetection"))
         {
-            ptDist = cv::norm(curPt.coordinates - (*speckIter).getCoordinates());
-            if(ptDist <= exclusionZone)
+            std::vector<Speckle>::iterator speckIter;
+            for(speckIter = specklesList.begin(); speckIter < specklesList.end(); speckIter++)
             {
-                maxImgPts.erase(curElem);
-                curElem--;
-                curElemRemoved = true;
-                break;
+                ptDist = cv::norm(curPt.coordinates - (*speckIter).getCoordinates());
+                if(ptDist <= exclusionZone)
+                {
+                    maxImgPts.erase(curElem);
+                    curElem--;
+                    curElemRemoved = true;
+                    break;
+
+                }
 
             }
 
@@ -162,6 +167,48 @@ void SpeckleNuller::exclusionZoneCut(std::vector<ImgPt> &maxImgPts)
 
 }
 
+void SpeckleNuller::updateAndCutActiveSpeckles(std::vector<ImgPt> &maxImgPts)
+{
+    std::vector<ImgPt>::iterator ptIter;
+    std::vector<Speckle>::iterator speckIter;
+    bool speckFound; // check if nulled speckle has been detected
+    int exclusionZone = cfgParams.get<int>("NullingParams.exclusionZone");
+    double ptDist;
+    
+    for(speckIter = specklesList.begin(); speckIter < specklesList.end(); speckIter++)
+    {
+        speckFound = false;
+        for(ptIter = maxImgPts.begin(); ptIter < maxImgPts.end(); ptIter++)
+        {
+            ptDist = cv::norm((*ptIter).coordinates - (*speckIter).getCoordinates());
+            if(ptDist < cfgParams.get<double>("TrackingParams.distThresh"))
+            {
+                speckFound = true;
+                if(cfgParams.get<bool>("TrackingParams.updateCoords"))
+                    (*speckIter).setCoordinates((*ptIter).coordinates);
+                (*speckIter).measureIntensityCorrection(badPixMask);
+                (*speckIter).measureSpeckleIntensityAndSigma(image);
+                if(verbose)
+                    std::cout << "SpeckleNuller: Re-detected active speckle at " << (*ptIter).coordinates << std::endl;
+                maxImgPts.erase(ptIter);
+                break;
+
+            }
+
+
+        }
+
+        if(!speckFound)
+        {
+            specklesList.erase(speckIter);
+            speckIter--;
+
+        }
+
+    }
+
+}
+
 void SpeckleNuller::updateAndCutNulledSpeckles(std::vector<ImgPt> &maxImgPts)
 {
     std::vector<ImgPt>::iterator ptIter;
@@ -185,7 +232,7 @@ void SpeckleNuller::updateAndCutNulledSpeckles(std::vector<ImgPt> &maxImgPts)
                 (*speckIter).measureIntensityCorrection(badPixMask);
                 (*speckIter).measureSpeckleIntensityAndSigma(image);
                 if(verbose)
-                    std::cout << "SpeckleNuller: Re-detected speckle at " << (*ptIter).coordinates << std::endl;
+                    std::cout << "SpeckleNuller: Re-detected nulled speckle at " << (*ptIter).coordinates << std::endl;
                 specklesList.push_back(*speckIter);
                 maxImgPts.erase(ptIter);
                 break;
@@ -200,7 +247,6 @@ void SpeckleNuller::updateAndCutNulledSpeckles(std::vector<ImgPt> &maxImgPts)
 
 }
             
-
 void SpeckleNuller::createSpeckleObjects(std::vector<ImgPt> &imgPts)
 { 
     if(verbose)
@@ -228,6 +274,19 @@ void SpeckleNuller::createSpeckleObjects(std::vector<ImgPt> &imgPts)
         std::cout << std::endl;
 
 }
+
+void SpeckleNuller::updateExistingSpeckles()
+{
+    std::vector<Speckle>::iterator it;
+    
+    for(it = specklesList.begin(); it < specklesList.end(); it++)
+    {
+        (*it).measureSpeckleIntensityAndSigma(image);
+
+    }
+
+}
+    
 
 void SpeckleNuller::measureSpeckleProbeIntensities(int phaseInd)
 {

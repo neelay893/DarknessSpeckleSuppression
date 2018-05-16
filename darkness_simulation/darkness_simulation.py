@@ -7,7 +7,7 @@ import mkid_processing as mkp
 
 class OpticsSim:
     
-    def __init__(self, xWidth=70, yWidth=70, nLDperPix=8, beammapFile=None):
+    def __init__(self, xWidth=70, yWidth=70, nLDperPix=8, darkNLD=2, beammapFile=None):
         '''
         INPUTS: 
             xWidth, yWidth: image size in lambda/D
@@ -16,6 +16,7 @@ class OpticsSim:
         self.probeSpeckleImage = np.zeros((xWidth*nLDperPix, yWidth*nLDperPix), dtype=np.complex128)  
         self.imageCoords = np.mgrid[-xWidth/2:xWidth/2:1./nLDperPix, -yWidth/2:yWidth/2:1./nLDperPix]
         self.nLD = nLDperPix
+        self.darkNLD = darkNLD
         self.xWidth = xWidth
         self.yWidth = yWidth
 
@@ -62,8 +63,8 @@ class OpticsSim:
             psfLoc - location of PSF on DARKNESS image, in pixel units
         '''
         image = self.probeSpeckleImage + self.speckleFieldImage
-        darkPSFCoords = np.array(darkPSFLoc*self.nLD/2, dtype=np.int32)
-        darkImSize = np.array([80, 125])*self.nLD/2
+        darkPSFCoords = np.array(darkPSFLoc*int(self.nLD/self.darkNLD), dtype=np.int32)
+        darkImSize = np.array([80, 125])*int(self.nLD/self.darkNLD)
         imgOffs = self.psfCoords - darkPSFCoords
         print 'psfCoords', self.psfCoords
         print 'imgOffs', imgOffs
@@ -71,9 +72,9 @@ class OpticsSim:
         darkIm = image[imgOffs[0]:darkImSize[0]+imgOffs[0], imgOffs[1]:darkImSize[1]+imgOffs[1]]
         darkIm = np.array(np.abs(darkIm)**2, dtype=np.float64)
         
-        downSampFilt = np.ones((int(self.nLD/2), int(self.nLD/2)))
+        downSampFilt = np.ones((int(self.nLD/self.darkNLD), int(self.nLD/self.darkNLD)))
         darkIm = signal.correlate(darkIm, downSampFilt, 'valid')
-        self.darkIm = darkIm[0:-1:int(self.nLD/2), 0:-1:int(self.nLD/2)]
+        self.darkIm = darkIm[0:-1:int(self.nLD/self.darkNLD), 0:-1:int(self.nLD/self.darkNLD)]
         darkImShape = np.shape(self.darkIm)
         self.darkIm = np.pad(self.darkIm, ((0,80-darkImShape[0]),(0,125-darkImShape[1])), 'edge')
         self.darkIm[self.badPixels] = 0
@@ -93,7 +94,6 @@ class OpticsSim:
         image = self.probeSpeckleImage + self.speckleFieldImage
         if ax is None:
             plt.imshow(np.transpose(np.abs(image)**2))
-            plt.colorbar()
             plt.show()
 
         else:
@@ -105,7 +105,6 @@ class OpticsSim:
     def plotDarkImage(self, ax=None, fig=None):
         if ax is None:
             plt.imshow(np.transpose(self.darkIm))
-            plt.colorbar()
             plt.show()
 
         else:
@@ -120,7 +119,7 @@ if __name__=='__main__':
     kvecFn = 'kvecs.txt'
     speckleType = ['probe', 'real']
     
-    nSpeckles = 15
+    nSpeckles = 3
     amplitudeRange = 5
     xRange = 15 #lambda/D
     yRange = 20
@@ -164,8 +163,8 @@ if __name__=='__main__':
             print 'generating speckle at', kx[i]/(2*np.pi), ky[i]/(2*np.pi), 'amplitude:', amplitudes[i], 'phase:', phases[i], speckleType[int(isFinal[i])]
         
         opticsSim.generateDarknessImage(psfLoc)
-        #opticsSim.plotDarkImage()
-        #plt.show()
+        opticsSim.plotDarkImage()
+        plt.show()
         opticsSim.saveDarknessImage(imgDir)
         np.savetxt(os.path.join(imgDir, 'IMG_READY'), [])
     

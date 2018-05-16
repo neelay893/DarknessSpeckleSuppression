@@ -4,7 +4,7 @@ ImgParams
     yCenter 60
 
     lambdaOverD 2.71
-    integrationTime 1000
+    integrationTime 5
 
     xCtrlStart -20 ;-20 ;relative to center, in pixel coordinates
     xCtrlEnd  20 ;40
@@ -34,19 +34,19 @@ DMCal
 
 NullingParams
 {
-    maxSpeckles 3
-    speckleWindow 8
+    maxSpeckles 10
+    speckleWindow 4
     exclusionZone 6
     nPhases 4
     apertureRadius 4
-    defaultGain 0.5
+    defaultGain 0.8
     useBoxBlur false
     useGaussianBlur false
 
     scaleByVisibility true ;DO NOT turn both on at the same time
     useGainLoop false
 
-    applyRandomCoordinateOffset false
+    useRandomKvecOffset true
     usFactor 2 ;upsampling to use when detecting speckles
 
 }
@@ -56,12 +56,14 @@ TrackingParams
     useVisibility true ;not used - visibility is turned on
     vis0 0.8 ;initial visibility estimate
     sigmaVis0 1 ;fudge factor for sigmaVis
-    iterGain 1 ;gain of new measurement in state estimate (before scaling by sigma)
-    snrThresh 10 ;minimum signal to noise 
+    iterGain 1 ;gain of new measurement in state estimate (before scaling by sigma and vis)
+    snrThresh 5 ;minimum signal to noise 
 
     updateCoords true ;update coordinates after nulling iteration
-    distThresh 1 ;max distance to tag speckle as the "same" as nulled speckle
-    nullIterWeight 0.1 ;state estimate penalty post-nulling. should be <=1
+    distThresh 2 ;max distance to tag speckle as the "same" as nulled speckle
+    nullIterWeight 0.3 ;state estimate penalty post-nulling. should be <=1
+
+    enforceRedetection false ;speckle must be re-detected every iteration to remain active
 
 
 }

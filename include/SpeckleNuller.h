@@ -66,6 +66,8 @@ class SpeckleNuller
         **/
         void updateAndCutNulledSpeckles(std::vector<ImgPt> &maxImgPts);
 
+        void updateAndCutActiveSpeckles(std::vector<ImgPt> &maxImgPts);
+
         /**
         * Grabs a new image from packetmaster and updates current image
         * (stored in "image" array)
@@ -86,6 +88,8 @@ class SpeckleNuller
         * in specklesList.
         **/
         void createSpeckleObjects(std::vector<ImgPt> &imgPts);
+
+        void updateExistingSpeckles();
 
         /**
         * Measures the intensity of each speckle in specklesList at the specified probe phase; 
