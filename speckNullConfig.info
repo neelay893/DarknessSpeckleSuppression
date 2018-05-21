@@ -12,8 +12,9 @@ ImgParams
     yCtrlEnd 45;45
 
     useBadPixMask true
-    badPixMaskFile /home/neelay/DarknessData/20180507/snBinFiles/badPixelMask.img
+    badPixMaskFile /mnt/data0/Darkness/20171006/snBinFiles/badPixelMask.img
     badPixFiltSize 5
+    usFactor 2
 
     useFlatCal false
     flatCalFile /mnt/data0/Darkness/20171001/snBinFiles/flatWeights.bin

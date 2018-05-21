@@ -13,6 +13,9 @@ def getBeammappedPixels(beammapFile, xSize=80, ySize=125):
     beammappedYLocs = np.array(beammap[beammappedInds,3], dtype=np.int32)
     rawIm[beammappedXLocs, beammappedYLocs] = 0
     return rawIm
+
+def getHotPixMask(hotPixMaskFile, xSize=80, ySize=125):
+    return np.load(hotPixMaskFile)['darkHPMImg']
     
 def saveBinImg(image, imageFn):
     print 'saving darkness image at', imageFn
@@ -29,9 +32,18 @@ if __name__=='__main__':
     beammapFn = "finalMap_20170924.txt"
     badPixImgFn = "badPixelMask.img"
     badPixImgDir = os.path.join(mdd, "snBinFiles")
+    hotPixMaskDir = '/mnt/data0/CalibrationFiles/tempDarkCal/PAL2017b/20171006'
+    hotPixMaskFn = 'HPMSpeckleNull.npz'
+    useHotPixMask = True
     
     beammapFile = os.path.join(bmdir, beammapFn)
     badPixMask = np.transpose(getBeammappedPixels(beammapFile)) #transpose to agree w/ opencv convention
+
+    if useHotPixMask:
+        hotPixMaskFile = os.path.join(hotPixMaskDir, hotPixMaskFn)
+        hotPixMask = getHotPixMask(hotPixMaskFile) #opencv conventions again
+        badPixMask = np.logical_or(badPixMask, hotPixMask)
+
     plt.imshow(badPixMask)
     plt.show()
     saveBinImg(badPixMask, os.path.join(badPixImgDir, badPixImgFn))

@@ -108,7 +108,6 @@ void ImageGrabber::startIntegrating(uint64_t startts)
 {
     *tsPtr = startts;
     *intTimePtr = (uint64_t)(cfgParams.get<double>("ImgParams.integrationTime")*2);
-    std::cout << "int time buff: " << *intTimePtr << std::endl;
     (*takeImgSemPtr).post();
 
 }
