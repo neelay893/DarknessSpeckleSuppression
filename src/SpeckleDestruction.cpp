@@ -223,7 +223,7 @@ void realImgGrabTest()
     boost::property_tree::ptree cfgParams;
     read_info("speckNullConfig.info", cfgParams);
     ImageGrabber imgGrabber(cfgParams);
-    std::chrono::microseconds rawTime;
+    std::chrono::microseconds rawTime, rawTime2;
     uint64_t timestamp;
     while(1)
     {
@@ -233,12 +233,14 @@ void realImgGrabTest()
         std::cout << std::endl;
         rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
         timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
-        std::cout << "Raw TS: " << timestamp << std::endl;
-        std::cout << "Starting Integration..." << std::endl;
-        imgGrabber.startIntegrating(timestamp);
+        //std::cout << "Raw TS: " << timestamp << std::endl;
+        //std::cout << "Starting Integration..." << std::endl;
+        imgGrabber.startIntegrating(0);
         imgGrabber.readNextImage();
+        rawTime2 = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
+        std::cout << "Real integration time: " << (rawTime2.count()/500 - rawTime.count()/500) << std::endl;
         std::cout << "Displaying Image..." << std::endl;
-        imgGrabber.displayImage(true);
+        imgGrabber.displayImage(false);
 
     }
 
@@ -342,7 +344,6 @@ int main()
     //realSpeckleDetectionTest();
     //simpleCentoffsLoadSaveTest();
     speckNullSimLoop();
-
 
     // for(int i=0; i<100; i++)
     // {

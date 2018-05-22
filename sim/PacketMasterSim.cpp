@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <string>
 
-std::string imageDir = "/home/neelay/SpeckleNulling/DarknessSpeckleSuppression/darkness_simulation/images/";
+std::string imageDir = "/mnt/data0/DarknessSpeckleSuppression/darkness_simulation/images/";
 std::string imgReadyFn = imageDir + "IMG_READY";
 char *imgArr;
 char *tsPtr;
@@ -19,7 +19,7 @@ char *intTimePtr;
 
 void getNextImage(int timestamp)
 {
-    std::string fn = imageDir + std::to_string(timestamp) +  ".img";
+    std::string fn = imageDir + std::to_string((unsigned long long int)timestamp) +  ".img";
     std::ifstream imgFile(fn.c_str(), std::ifstream::in|std::ifstream::binary);
     imgFile.read(imgArr, 2*IMXSIZE*IMYSIZE);
 
@@ -102,7 +102,9 @@ int main()
     boost::interprocess::shared_memory_object::remove("speckNullImgBuffer");
     boost::interprocess::shared_memory_object::remove("speckNullTimestamp");
     boost::interprocess::shared_memory_object::remove("speckNullIntTime");
-    sem_destroy(doneImgSem);
-    sem_destroy(takeImgSem);
+    sem_close(doneImgSem);
+    sem_close(takeImgSem);
+    sem_unlink(doneImgSemName);
+    sem_unlink(takeImgSemName);
 
 }
