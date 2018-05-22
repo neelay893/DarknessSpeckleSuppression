@@ -155,6 +155,69 @@ void speckNullLoop()
 
 }*/
 
+/*
+void speckNullLoopKF() //JLlop: implementation of a Kalman Filter for better convergence into a SN solution. Based on the code by Yinzi Xin at Caltech
+{
+    boost::property_tree::ptree cfgParams;
+    read_info("speckNullConfig.info", cfgParams);
+    SpeckleNuller speckNull(cfgParams, true);
+    std::vector<ImgPt> imgPts;
+    std::chrono::microseconds rawTime;
+    uint64_t timestamp;
+    //for(int n=0; n<10; n++){	//start loop for DH digging
+    rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
+    timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
+    std::cout << "Raw TS: " << timestamp << std::endl;
+    std::cout << "Starting Integration..." << std::endl;
+    speckNull.updateImage(timestamp+200);
+    std::cout << "Detecting Speckles..." << std::endl;
+    imgPts = speckNull.detectSpeckles();
+	
+    std::cout << "Creating Speckle Objects..." << std::endl;
+    speckNull.createSpeckleObjects(imgPts);
+
+    speckNull.init_KF(); //JLlop
+
+    for(int II=0; II<5; II++) //KF loop
+    {
+        std::cout << "================BEGIN LOOP ITERATION=================" << std::endl;
+        std::cout << "Creating Probe Speckles..." << std::endl;
+        for(int i=0; i<4; i++)
+        {
+            std::cout << "------Begin Probe Iteration---------" << std::endl;
+            std::cout << "generating probe flatmap " << std::endl;
+            speckNull.generateProbeFlatmap(i);
+            std::cout << "loading probe centoffs" << std::endl;
+            speckNull.loadProbeSpeckles();
+            rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
+            timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
+            std::cout << "Raw TS: " << timestamp << std::endl;
+            std::cout << "Starting Integration..." << std::endl;
+            speckNull.updateImage(timestamp+200);
+            speckNull.measureSpeckleProbeIntensities(i);
+            std::cout << std::endl << std::endl << std::endl;
+
+        }
+	speckNull.calculateFinalPhases();
+	// JLlop: So far, everything is the same as regular Speckle Nulling. Now KF:
+	speckNull.calculateFinalAmplitude(); //New function to compute the amplitude on the DM corresponding to each speckle
+	speckNull.updateEstimatesKF();  //Given the measurement of phase and amplitude, update the estimates of the KF
+	speckNull.updateControlKF(); 	//Update finalAmplitude and finalPhase with new estimate from the KF
+	// JLlop: now that FinalPhase and FinalAmplitude are updated, we can update the DM shape:
+	speckNull.generateNullingFlatmap(); 
+
+    }
+    std::cout << std::endl << std::endl << std::endl;
+       
+    std::string dummy;
+    std::cout << "Press any key...";
+    std::getline(std::cin, dummy);
+    std::cout << std::endl;
+
+    //}//end of DH digging iteration loop
+
+}*/
+
 void realImgGrabTest()
 { 
     boost::property_tree::ptree cfgParams;
