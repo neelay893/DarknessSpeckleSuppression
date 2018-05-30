@@ -7,7 +7,7 @@ cv::Point2d calculateKVecs(const cv::Point2d &coords, boost::property_tree::ptre
     intCoords.x = (double)(coords.x + cfgParams.get<int>("ImgParams.xCtrlStart"));
     intCoords.y = (double)(coords.y + cfgParams.get<int>("ImgParams.yCtrlStart"));
     kvecs.x = 2.0*M_PI*(std::cos(-dmAngle)*intCoords.x - std::sin(-dmAngle)*intCoords.y)/cfgParams.get<double>("ImgParams.lambdaOverD");
-    kvecs.y = 2.0*M_PI*(std::sin(-dmAngle)*intCoords.x + std::cos(-dmAngle)*intCoords.y)/cfgParams.get<double>("ImgParams.lambdaOverD");
+    kvecs.y = -2.0*M_PI*(std::sin(-dmAngle)*intCoords.x + std::cos(-dmAngle)*intCoords.y)/cfgParams.get<double>("ImgParams.lambdaOverD");
     return kvecs;
 
 }
@@ -15,7 +15,7 @@ cv::Point2d calculateKVecs(const cv::Point2d &coords, boost::property_tree::ptre
 double calculateDMAmplitude(const cv::Point2d &kvecs, unsigned short intensity, boost::property_tree::ptree &cfgParams)
 {
     double k = norm(kvecs);
-    return std::sqrt(intensity*(cfgParams.get<double>("DMCal.a")*k*k + cfgParams.get<double>("DMCal.b")*k + cfgParams.get<double>("DMCal.c")));
+    return std::sqrt(1000*intensity/cfgParams.get<double>("ImgParams.integrationTime")*(cfgParams.get<double>("DMCal.a")*k*k + cfgParams.get<double>("DMCal.b")*k + cfgParams.get<double>("DMCal.c")));
 
 }
 
@@ -23,9 +23,9 @@ double calculateDMAmplitude(const cv::Point2d &kvecs, unsigned short intensity, 
 cv::Mat generateFlatmap(const cv::Point2d kvecs, unsigned short intensity, double phase, boost::property_tree::ptree &cfgParams)
 {
     double amp = calculateDMAmplitude(kvecs, intensity, cfgParams);
-    // std::cout << "dmTools: generating flatmap with amplitude: " << amp << std::endl;
-    // std::cout << "dmTools kvecs: " << kvecs << std::endl;
-    // std::cout << "dmTools phase: " << phase << std::endl;
+    std::cout << "dmTools: generating flatmap with amplitude: " << amp << std::endl;
+    std::cout << "dmTools kvecs: " << kvecs << std::endl;
+    std::cout << "dmTools phase: " << phase << std::endl;
     double phx, phy;
     cv::Mat flatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
     /*flatmap.forEach<Pixel>([&phx, &phy, amp, phase, &kvecs](Pixel &value, const int *position) -> void
@@ -59,6 +59,22 @@ cv::Mat generateFlatmap(const cv::Point2d kvecs, double amp, double phase)
 cv::Mat convertFlatmapToCentoffs(const cv::Mat &flatFlatmap, const cv::Mat &influenceMatrix)
 {
     cv::Mat centoffs = influenceMatrix * flatFlatmap;
+    return centoffs;
+
+}
+
+cv::Mat convertFlatmapToCentoffsSparse(const cv::Mat &flatFlatmap, const Eigen::SparseMatrix<float> &influenceMatrix)
+{
+    Eigen::Matrix<float, N_DM_ACTS, 1> flatFlatmapEigen;
+    Eigen::Matrix<float, N_CENTOFFS, 1> centoffsEigen;
+    cv::Mat centoffs;
+
+    cv2eigen(flatFlatmap, flatFlatmapEigen);
+    
+    centoffsEigen = influenceMatrix*flatFlatmapEigen;
+
+    eigen2cv(centoffsEigen, centoffs);
+
     return centoffs;
 
 }

@@ -4,6 +4,7 @@
 #include "ImageGrabber.h"
 #include "Speckle.h"
 #include "P3KCom.h"
+#include "P3KComFast.h"
 #include "imageTools.h"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/info_parser.hpp>
@@ -37,7 +38,7 @@ class SpeckleNuller
         //ImageGrabber imgGrabber; //ImageGrabber instance to interface with PacketMaster
         std::vector<Speckle> specklesList, nullSpecklesList; //List of Speckle (objects) being nulled
         boost::property_tree::ptree cfgParams; //Container for configuration params
-        P3KCom *p3k; //P3KCom instance for loading flatmaps/centoffs into P3K
+        P3KComFast *p3k; //P3KCom instance for loading flatmaps/centoffs into P3K
         bool verbose; //verbosity parameter; 1 if verbose, 0 if not
         //Speckle *speckleList;
 

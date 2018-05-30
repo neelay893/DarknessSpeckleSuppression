@@ -26,6 +26,8 @@ class Calibrator
         std::vector<bool> isValidPos; //true if speckle is actually on the array
         std::vector<bool> isValidNeg;
         std::vector<double> dmAmplitudes; //dm amplitudes of speckles on the DM
+        std::vector<double> posSpeckleIntensities; //dm amplitudes of speckles on the DM
+        std::vector<double> negSpeckleIntensities; //dm amplitudes of speckles on the DM
 
         boost::property_tree::ptree cfgParams;
         P3KCom *p3k;
@@ -36,6 +38,13 @@ class Calibrator
         cv::Mat filtImage;
         cv::Mat badPixMask;
 
+        double measureIntensityCorrection(cv::Point2d coords);
+        cv::Point2d centroidPoint(cv::Point2d posEstimate);
+        cv::Point2d calculatePositionEstimate(cv::Point2d kvec);
+        void filterImage(cv::Mat &img);
+
+        bool verbose;
+
     public:
         Calibrator(boost::property_tree::ptree &ptree, P3KCom *p);
         double lambdaOverD;
@@ -44,20 +53,25 @@ class Calibrator
 
         void updateImage(cv::Mat img, bool addToCurImg=false);
         void updateBadPixMask(cv::Mat &bpMask);
-        void filterImage(cv::Mat &img);
 
-        cv::Point2d determineImgCenter();
-        double determineDMAngle();
+        void determineImgCenter();
+        void determineDMAngle();
+        void determineLambdaOverD();
 
         void addCalSpeckle(cv::Point2d kvecs, double amplitude);
         void centroidCalSpeckles();
-        cv::Point2d centroidPoint(cv::Point2d posEstimate);
-        cv::Point2d calculatePositionEstimate(cv::Point2d kvec);
 
         void updateNullingFlatmap(cv::Mat &flatmap);
         void loadCalFlatmap();
         void unloadCalFlatmap();
         void clearCalSpeckles();
+
+        void measureCalSpeckleIntensities();
+
+        std::vector<cv::Point2d> getSpecklePositions();
+        std::vector<cv::Point2d> getSpeckleNegPositions();
+        std::vector<cv::Point2d> getSpecklePosIntensities();
+        std::vector<cv::Point2d> getSpeckleNegIntensities();
 
 };
 

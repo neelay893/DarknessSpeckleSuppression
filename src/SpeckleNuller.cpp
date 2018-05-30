@@ -15,7 +15,7 @@ SpeckleNuller::SpeckleNuller(boost::property_tree::ptree &ptree, bool vbose)
     verbose = vbose;
     //imgGrabber = ImageGrabber(ptree);
     std::cout << "Creating P3K Object" << std::endl;
-    p3k = new P3KCom(ptree);
+    p3k = new P3KComFast(ptree);
     if(cfgParams.get<bool>("P3KParams.useCentoffs"))
         (*p3k).grabCurrentCentoffs();
     else
@@ -60,6 +60,7 @@ std::vector<ImgPt> SpeckleNuller::detectSpeckles()
     //scale image parameters by usFactor, since image is upsampled
     int speckleWindow = cfgParams.get<int>("NullingParams.speckleWindow")*cfgParams.get<int>("NullingParams.usFactor");
     int apertureRadius = cfgParams.get<double>("NullingParams.apertureRadius");
+    int kvecOffsSize = (int)cfgParams.get<double>("NullingParams.kvecOffsSize");
 
     //Find local maxima within cfgParams.get<int>("NullingParams.speckleWindow") size window
     cv::Mat kernel = cv::Mat::ones(speckleWindow, speckleWindow, CV_8UC1);
@@ -86,8 +87,8 @@ std::vector<ImgPt> SpeckleNuller::detectSpeckles()
         tempPt.coordinates = cv::Point2d((double)(*it).x/usFactor, (double)(*it).y/usFactor); //coordinates in real image
         tempPt.intensity = filtImg.at<double>(*it);
         if(tempPt.intensity != 0)
-            if((tempPt.coordinates.x < (image.cols-apertureRadius)) && (tempPt.coordinates.x > apertureRadius)
-                && (tempPt.coordinates.y < (image.rows-apertureRadius)) && (tempPt.coordinates.y > apertureRadius))
+            if((tempPt.coordinates.x < (image.cols-apertureRadius-kvecOffsSize)) && (tempPt.coordinates.x > (apertureRadius+kvecOffsSize))
+                && (tempPt.coordinates.y < (image.rows-apertureRadius-kvecOffsSize)) && (tempPt.coordinates.y > (apertureRadius+kvecOffsSize)))
             maxImgPts.push_back(tempPt);
 
     }
@@ -160,9 +161,12 @@ void SpeckleNuller::exclusionZoneCut(std::vector<ImgPt> &maxImgPts)
         }
 
     }
+
+    if(specklesList.size() >= cfgParams.get<int>("NullingParams.maxSpeckles"))
+        maxImgPts.clear();
     
-    if(maxImgPts.size() > cfgParams.get<int>("NullingParams.maxSpeckles"))
-        maxImgPts.erase(maxImgPts.begin()+cfgParams.get<int>("NullingParams.maxSpeckles"), maxImgPts.end());
+    else if(maxImgPts.size() > (cfgParams.get<int>("NullingParams.maxSpeckles") - specklesList.size()))
+        maxImgPts.erase(maxImgPts.begin()+cfgParams.get<int>("NullingParams.maxSpeckles") - specklesList.size(), maxImgPts.end());
 
 
 }

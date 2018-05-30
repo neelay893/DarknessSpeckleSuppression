@@ -34,8 +34,10 @@ class Speckle
         double measSigmaVis;
         double speckVisibility;
         double measSpeckVisibility;
+        cv::Point2d rawCoordinates;
         cv::Point2d coordinates;
         cv::Point2d measCoordinates;
+        int nProbeIters;
         
         bool isNulled; //True if speckle was nulled in last iteration
 
@@ -44,6 +46,7 @@ class Speckle
         double gainIntensities[NGAINS]; //measured speckle intensities at each probe gain
         double gainList[NGAINS]; //List of probe gains, if using gain loop
         cv::Point2d kvecs; //speckle k-vectors (spatial angular frequencies)
+        cv::Point2d measKvecs;
         cv::Point2d rawKvecs; //speckle k-vectors (spatial angular frequencies)
         cv::Point2d kvecsOffs; //speckle k-vectors (spatial angular frequencies)
         cv::Mat apertureMask; //Aperture window used to measure speckle intensity

@@ -2,7 +2,9 @@
 #include <Speckle.h>
 #include <ImageGrabber.h>
 #include <P3KCom.h>
+#include <P3KComFast.h>
 #include <dmTools.h>
+#include <Calibrator.h>
 #include <iostream>
 #include <unistd.h>
 #include <opencv2/opencv.hpp>
@@ -63,6 +65,119 @@ void speckNullSimLoop()
 
 }
 
+void speckNullLoop()
+{
+    boost::property_tree::ptree cfgParams;
+    read_info("speckNullConfig.info", cfgParams);
+    SpeckleNuller speckNull(cfgParams, true);
+    ImageGrabber imgGrabber(cfgParams);
+    std::vector<ImgPt> imgPts;
+    speckNull.updateBadPixMask(imgGrabber.getBadPixMaskCtrl());
+    std::chrono::microseconds rawTime;
+    uint64_t timestamp;
+    std::string dummy;
+
+    for(int n=0; n<2; n++)
+    {
+        std::cout << "================BEGIN LOOP ITERATION=================" << std::endl;
+        rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
+        timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
+        std::cout << "Raw TS: " << timestamp << std::endl;
+        std::cout << "TS: " << (double)timestamp/2000 + TSOFFS << std::endl;
+        std::cout << "Starting Integration..." << std::endl;
+        imgGrabber.startIntegrating(0);
+        imgGrabber.readNextImage();
+        imgGrabber.processFullImage();
+        speckNull.updateImage(imgGrabber.getCtrlRegionImage());
+        //std::cout << imgGrabber.getCtrlRegionImage() << std::endl;
+        std::cout << "Detecting Speckles..." << std::endl;
+        imgPts = speckNull.detectSpeckles();
+        speckNull.exclusionZoneCut(imgPts);
+        speckNull.updateAndCutNulledSpeckles(imgPts);
+        if(cfgParams.get<bool>("TrackingParams.enforceRedetection"))
+            speckNull.updateAndCutActiveSpeckles(imgPts);
+        else
+            speckNull.updateExistingSpeckles();
+        std::cout << "Creating Speckle Objects..." << std::endl;
+        speckNull.createSpeckleObjects(imgPts);
+        std::cout << "Creating Probe Speckles..." << std::endl;
+
+        //std::cout << "Press any key...";
+        //std::getline(std::cin, dummy);
+
+        for(int i=0; i<4; i++)
+        {
+            std::cout << "------Begin Probe Iteration---------" << std::endl;
+            speckNull.generateProbeFlatmap(i);
+            rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
+            timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
+            std::cout << "loading probe centoffs, raw TS: " << timestamp << std::endl;
+            speckNull.loadProbeSpeckles();
+            rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
+            timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
+            std::cout << "Raw TS: " << timestamp << std::endl;
+            std::cout << "TS: " << (double)timestamp/2000 << std::endl;
+            std::cout << "Starting Integration..." << std::endl;
+            imgGrabber.startIntegrating(0);
+            imgGrabber.readNextImage();
+            imgGrabber.processFullImage();
+            speckNull.updateImage(imgGrabber.getCtrlRegionImage());
+            speckNull.measureSpeckleProbeIntensities(i);
+            std::cout << std::endl << std::endl << std::endl;
+
+            //std::cout << "Press any key...";
+            //std::getline(std::cin, dummy);
+
+        }
+
+        std::cout << "Nulling Speckles..." << std::endl;
+        speckNull.updateSpecklesAndCheckNull();
+        speckNull.generateNullingFlatmap();
+        speckNull.loadNullingSpeckles();
+        //std::cout << "Press any key...";
+        //std::getline(std::cin, dummy);
+        if(access("QUIT", F_OK)!=-1)
+           break;
+
+    }
+
+}
+
+void calibrateCenterAndAngle()
+{ 
+    boost::property_tree::ptree cfgParams;
+    double integrationTime = 1000; //integration time in ms
+    read_info("speckNullConfig.info", cfgParams);
+    P3KCom *p3k;
+    p3k = new P3KCom(cfgParams);
+    (*p3k).grabCurrentCentoffs();
+    Calibrator calibrator(cfgParams, p3k);
+    ImageGrabber imgGrabber(cfgParams);
+    calibrator.updateBadPixMask(imgGrabber.getBadPixMask());
+
+    //Specify kvecs/coordinates here
+    cv::Point2d kvecs(70,0);
+    //cv::Point2d kvecs2(75,50);
+    calibrator.addCalSpeckle(kvecs, 100);
+    //calibrator.addCalSpeckle(kvecs2, 50);
+    
+    calibrator.loadCalFlatmap();
+    imgGrabber.startIntegrating(0);
+    imgGrabber.readNextImage();
+    calibrator.updateImage(imgGrabber.getFullImage());
+    calibrator.centroidCalSpeckles();
+    calibrator.measureCalSpeckleIntensities();
+    calibrator.determineImgCenter();
+    calibrator.determineDMAngle();
+    calibrator.determineLambdaOverD();
+
+    std::cout << "Center: " << calibrator.imgCenter.x << " " << calibrator.imgCenter.y << std::endl;
+    std::cout << "Angle: " << calibrator.dmAngle << std::endl;
+    std::cout << "l/D: " << calibrator.lambdaOverD << std::endl;
+
+}
+
+    
 
 /*
 void speckNullLoop()
@@ -254,33 +369,68 @@ void simpleCentoffsLoadSaveTest()
     cv::Mat newFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
     std::cout << "creating p3k com object" << std::endl;
     //P3KCom *p3k;
-    P3KCom *p3k;
-    p3k = new P3KCom(cfgParams);
+    P3KComFast *p3k;
+    p3k = new P3KComFast(cfgParams);
     std::cout << "grabbing centoffs" << std::endl;
     (*p3k).grabCurrentCentoffs();
     std::cout << "loading centoffs" << std::endl;
-    cv::Point2i coords(35,0);
+
+    cv::Point2i coords(21,16);
     std::cout << "coords: " << coords.x << " "  << coords.y << std::endl;
     cv::Point2d kvecs = calculateKVecs(coords, cfgParams);
     //kvecs = cv::Point2d(67.77,25.14);
     std::cout << "Kvecs: " << kvecs.x << " " << kvecs.y << std::endl;
-    newFlatmap = generateFlatmap(kvecs, 100, 3.1415);
-    cv::Point2i coords2 = cv::Point2d(70,0);
-    cv::Point2d kvecs2 = calculateKVecs(coords2, cfgParams);
-    cv::Mat newFlatmap2 = generateFlatmap(kvecs2, 100, 0);
-    newFlatmap += newFlatmap2;
+    //newFlatmap = generateFlatmap(kvecs, 120, 0);
+    newFlatmap = generateFlatmap(cv::Point2d(70,30), 120, 3.1415);
+    //cv::Point2i coords2 = cv::Point2d(70,0);
+    //cv::Point2d kvecs2 = calculateKVecs(coords2, cfgParams);
+    //cv::Mat newFlatmap2 = generateFlatmap(cv::Point2d(0,75), 120, 3.1415);
+    //newFlatmap += newFlatmap2;
     (*p3k).loadNewCentoffsFromFlatmap(newFlatmap);    
+
+}
+
+void centoffsSparseTest()
+{
+    boost::property_tree::ptree cfgParams;
+    std::cout << "reading cfg file" << std::endl;
+    read_info("speckNullConfig.info", cfgParams);
+    std::cout << "generating new flatmap" << std::endl;
+    cv::Mat newFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
+    std::cout << "creating p3k com object" << std::endl;
+    //P3KCom *p3k;
+    P3KComFast *p3k;
+    p3k = new P3KComFast(cfgParams);
+    std::cout << "grabbing centoffs" << std::endl;
+    (*p3k).grabCurrentCentoffs();
+    std::cout << "loading centoffs" << std::endl;
+
+    cv::Point2i coords(21,16);
+    std::cout << "coords: " << coords.x << " "  << coords.y << std::endl;
+    cv::Point2d kvecs = calculateKVecs(coords, cfgParams);
+    //kvecs = cv::Point2d(67.77,25.14);
+    std::cout << "Kvecs: " << kvecs.x << " " << kvecs.y << std::endl;
+    //newFlatmap = generateFlatmap(kvecs, 120, 0);
+    newFlatmap = generateFlatmap(cv::Point2d(70,30), 120, 3.1415);
+    //cv::Point2i coords2 = cv::Point2d(70,0);
+    //cv::Point2d kvecs2 = calculateKVecs(coords2, cfgParams);
+    //cv::Mat newFlatmap2 = generateFlatmap(cv::Point2d(0,75), 120, 3.1415);
+    //newFlatmap += newFlatmap2;
+    (*p3k).sparseConversionTest(newFlatmap);    
 
 }
 
 int main()
 {
+    centoffsSparseTest();
     //simpleCentoffsLoadSaveTest();
+    //calibrateCenterAndAngle();
     //speckNullLoop();
+    //realImgGrabTest();
     //simpleCentoffsLoadSaveTest();
     //realSpeckleDetectionTest();
     //simpleCentoffsLoadSaveTest();
-    speckNullSimLoop();
+    //speckNullSimLoop();
 
     // for(int i=0; i<100; i++)
     // {

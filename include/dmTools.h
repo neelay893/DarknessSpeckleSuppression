@@ -4,6 +4,9 @@
 
 #include <opencv2/opencv.hpp>
 #define _USE_MATH_DEFINES
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <opencv2/core/eigen.hpp>
 #include <cmath>
 #include <iostream>
 #include "params.h"
@@ -54,6 +57,7 @@ double calculateDMAmplitude(const cv::Point2i &kvecs, unsigned short intensity);
 * @return cv::Mat list of centroid offsets
 **/
 cv::Mat convertFlatmapToCentoffs(const cv::Mat &flatmap, const cv::Mat &influenceMatrix);
+cv::Mat convertFlatmapToCentoffsSparse(const cv::Mat &flatFlatmap, const Eigen::SparseMatrix<float> &influenceMatrix);
 
 /**
 * Clamps the centroid offsets; i.e. causes them to saturate at specified clamp value.
