@@ -18,12 +18,14 @@ Speckle::Speckle(cv::Point2d &pt, boost::property_tree::ptree &ptree, bool verb)
         
     apertureMask = cv::Mat::zeros(2*cfgParams.get<int>("NullingParams.apertureRadius")+1, 2*cfgParams.get<int>("NullingParams.apertureRadius")+1, CV_64F);
     cv::circle(apertureMask, cv::Point(cfgParams.get<int>("NullingParams.apertureRadius"), cfgParams.get<int>("NullingParams.apertureRadius")), cfgParams.get<int>("NullingParams.apertureRadius"), 1, -1);
+
+    kvecOffsSize = cfgParams.get<double>("NullingParams.kvecOffsSize");
     rawKvecs = calculateKVecs(coordinates, cfgParams);
+    kvecs = rawKvecs;
     if("NullingParams.useRandomKvecOffset")
         applyRandomKvecOffset();
     else
         measKvecs = rawKvecs;
-    kvecs = rawKvecs;
 
     verbose = verb;
     isNulled = false;
@@ -113,13 +115,6 @@ void Speckle::updateStateEstimates()
     speckIntensity = (w*speckIntensity + wMeas*measSpeckIntensity)/(w + wMeas);
     sigmaI = std::sqrt(std::pow(w,2)*std::pow(sigmaI,2) + std::pow(wMeas,2)*std::pow(measSigmaI,2))/(w + wMeas);
     
-    if(cfgParams.get<bool>("NullingParams.useRandomKvecOffset"))
-    {
-        kvecs = (wMeas*measKvecs + w*kvecs)/(wMeas + w);
-        std::cout << "Old measKvecs: " << measKvecs.x << " " << measKvecs.y <<std::endl;
-        applyRandomKvecOffset();
-
-    }
 
     for(i=0; i<NPHASES; i++)
         phaseIntensities[i] = (w*phaseIntensities[i] + wMeas*measPhaseIntensities[i])/(w + wMeas);
@@ -129,6 +124,15 @@ void Speckle::updateStateEstimates()
         + phaseIntensities[1] + phaseIntensities[2] + phaseIntensities[3]);
 
     nProbeIters++;
+
+    if(cfgParams.get<bool>("NullingParams.useRandomKvecOffset"))
+    {
+        kvecs = (wMeas*measKvecs + w*kvecs)/(wMeas + w);
+        std::cout << "Old measKvecs: " << measKvecs.x << " " << measKvecs.y <<std::endl;
+        //kvecOffsSize = std::pow((1-2*speckVisibility), 2)*cfgParams.get<double>("NullingParams.kvecOffsSize");
+        applyRandomKvecOffset();
+
+    }
 
 
     if(verbose)
@@ -259,9 +263,8 @@ void Speckle::generateSimFinalSpeckle()
 
 void Speckle::applyRandomKvecOffset()
 {
-    double offsSize = cfgParams.get<double>("NullingParams.kvecOffsSize");
-    kvecsOffs.x = offsSize*(2*M_PI/cfgParams.get<double>("ImgParams.lambdaOverD"))*(distribution(generator)-0.5); //currently offsets by up to 1.5 pix in x and y
-    kvecsOffs.y = offsSize*(2*M_PI/cfgParams.get<double>("ImgParams.lambdaOverD"))*(distribution(generator)-0.5);
+    kvecsOffs.x = kvecOffsSize*(2*M_PI/cfgParams.get<double>("ImgParams.lambdaOverD"))*(distribution(generator)-0.5); //currently offsets by up to 1.5 pix in x and y
+    kvecsOffs.y = kvecOffsSize*(2*M_PI/cfgParams.get<double>("ImgParams.lambdaOverD"))*(distribution(generator)-0.5);
     measKvecs = rawKvecs + kvecsOffs;
 
 }    

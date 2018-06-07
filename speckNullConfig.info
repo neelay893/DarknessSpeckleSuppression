@@ -1,26 +1,26 @@
 ImgParams
 {
-    xCenter 40 ;in pixel coordinates on DARKNESS image
-    yCenter 60
+    xCenter 33 ;in pixel coordinates on DARKNESS image
+    yCenter 31
 
-    lambdaOverD 2.71
-    integrationTime 5
+    lambdaOverD 2.81; darkness lyot stop = 2.81; lyot wheel open = 2.65;2.45;2.61
+    integrationTime 50 ;in milliseconds
 
-    xCtrlStart -20 ;-20 ;relative to center, in pixel coordinates
-    xCtrlEnd  20 ;40
-    yCtrlStart 0 ;12
-    yCtrlEnd 45;45
+    xCtrlStart -14 ;-20 ;relative to center, in pixel coordinates
+    xCtrlEnd  25 ;40
+    yCtrlStart 8 ;12
+    yCtrlEnd 40;45
 
     useBadPixMask true
-    badPixMaskFile /mnt/data0/Darkness/20171006/snBinFiles/badPixelMask.img
+    badPixMaskFile /mnt/data0/Darkness/20180530/snBinFiles/badPixelMask20180530.img 
     badPixFiltSize 5
     usFactor 2
 
     useFlatCal false
     flatCalFile /mnt/data0/Darkness/20171001/snBinFiles/flatWeights.bin
     
-    useDarkSub false
-    darkSubFile /mnt/data0/Darkness/20171006/snBinFiles/darkSub.bin
+    useDarkSub true
+    darkSubFile /mnt/data0/Darkness/20180530/snBinFiles/darkSub.bin
 
 }
 
@@ -28,19 +28,25 @@ DMCal
 {
     a 0
     b 0
-    c 1; int time = 1s (2000 int time = 1s)
-    angle 0;-1.232 ;-1.232 ;-1.252 ;-1.2055 ;-1.2321 ;-1.252 ;-1.216072;-70
+    c 0.3 ;vega with bad seeing: 0.5 ;tau boo ND open:0.7 ; wl ND open: 0.3 
+    angle -1.15257;-1.19713;-1.208;-1.232 ;-1.232 ;-1.252 ;-1.2055 ;-1.2321 ;-1.252 ;-1.216072;-70
+
+}
+
+CalParams
+{
+    centroidingWindowRadius 5
 
 }
 
 NullingParams
 {
-    maxSpeckles 10
+    maxSpeckles 1
     speckleWindow 4
-    exclusionZone 6
+    exclusionZone 12
     nPhases 4
-    apertureRadius 4
-    defaultGain 0.8
+    apertureRadius 2
+    defaultGain 2
     useBoxBlur false
     useGaussianBlur false
 
@@ -48,6 +54,8 @@ NullingParams
     useGainLoop false
 
     useRandomKvecOffset true
+    kvecOffsSize 1.5
+    applyRandomCoordOffset false
     usFactor 2 ;upsampling to use when detecting speckles
 
 }
@@ -58,13 +66,14 @@ TrackingParams
     vis0 0.8 ;initial visibility estimate
     sigmaVis0 1 ;fudge factor for sigmaVis
     iterGain 1 ;gain of new measurement in state estimate (before scaling by sigma and vis)
-    snrThresh 5 ;minimum signal to noise 
+    snrThresh 4 ;minimum signal to noise 
 
     updateCoords true ;update coordinates after nulling iteration
     distThresh 2 ;max distance to tag speckle as the "same" as nulled speckle
-    nullIterWeight 0.3 ;state estimate penalty post-nulling. should be <=1
+    nullIterWeight 0 ;1 ;state estimate penalty post-nulling. should be <=1
 
     enforceRedetection false ;speckle must be re-detected every iteration to remain active
+    minProbeIters 4
 
 
 }
@@ -72,10 +81,10 @@ TrackingParams
 P3KParams
 {
     useCentoffs true
-    centoffsMntDir /mnt/nfs/p3k/tables/cent_offsets/
-    centoffsDir /p3k/tables/cent_offsets/
-    grabCentoffsFn co_sn_temp
-    loadCentoffsFn dark_centoffs_sn_temp_loop
+    centoffsMntDir /mnt/nfs/p3k/tables/cent_offsets/darkness_centoffs/
+    centoffsDir /p3k/tables/cent_offsets/darkness_centoffs/
+    grabCentoffsFn co_darkness_20180530 ;coTweaked_20180530
+    loadCentoffsFn dark_centoffs_sn_temp_loop5
     
     useIllumMat true
     clampCentoffs true
@@ -90,6 +99,6 @@ P3KParams
     influenceMatFile ./p3kBinFiles/influenceMatCold.bin
     illumMatFile ./p3kBinFiles/illumMat.bin
             
-    useSSH false
+    useSSH true
 
 }

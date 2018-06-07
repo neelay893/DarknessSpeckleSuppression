@@ -77,7 +77,7 @@ void speckNullLoop()
     uint64_t timestamp;
     std::string dummy;
 
-    for(int n=0; n<2; n++)
+    for(int n=0; n<400; n++)
     {
         std::cout << "================BEGIN LOOP ITERATION=================" << std::endl;
         rawTime = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch());
@@ -422,10 +422,10 @@ void centoffsSparseTest()
 
 int main()
 {
-    centoffsSparseTest();
+    //centoffsSparseTest();
     //simpleCentoffsLoadSaveTest();
     //calibrateCenterAndAngle();
-    //speckNullLoop();
+    speckNullLoop();
     //realImgGrabTest();
     //simpleCentoffsLoadSaveTest();
     //realSpeckleDetectionTest();

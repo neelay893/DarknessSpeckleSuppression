@@ -53,6 +53,7 @@ class Speckle
         boost::property_tree::ptree cfgParams; //container used to store configuration parameters
         void computeSpecklePhase(); //method to compute nulling phase
         double measureIntensity(cv::Mat &image); 
+        double kvecOffsSize;
 
         std::default_random_engine generator;
         std::uniform_real_distribution<double> distribution;
