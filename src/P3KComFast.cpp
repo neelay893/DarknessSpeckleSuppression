@@ -78,6 +78,7 @@ void P3KComFast::loadNewCentoffsFromFlatmap(cv::Mat &flatmap)
     std::cout << "Done converting TS: " << timestamp << std::endl;
 
     
+    centoffs.convertTo(centoffs, CV_64FC1);
     centoffs += curCentoffs;
 
     
@@ -140,7 +141,7 @@ void P3KComFast::sparseConversionTest(cv::Mat &flatmap)
     std::cout << "Done converting TS: " << timestamp << std::endl;
 
     
-    centoffs.convertTo(centoffs, CV_64F);
+    centoffs.convertTo(centoffs, CV_64F); 
     centoffs += curCentoffs;
 
     
@@ -182,7 +183,6 @@ void P3KComFast::sparseConversionTest(cv::Mat &flatmap)
     timestamp = rawTime.count()/500 - (uint64_t)TSOFFS*2000;
     std::cout << "Done converting TS: " << timestamp << std::endl;
 
-    
     centoffs += curCentoffs;
 
     

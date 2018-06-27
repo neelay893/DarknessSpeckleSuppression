@@ -249,13 +249,13 @@ void ImageGrabber::applyFlatCalCtrlRegion()
 
 void ImageGrabber::applyDarkSub()
 {
-    fullImage = fullImage - darkSub;
+    fullImage = fullImage - darkSub*cfgParams.get<double>("ImgParams.integrationTime")/1000;
 
 }
 
 void ImageGrabber::applyDarkSubCtrlRegion()
 {
-    ctrlRegionImage = ctrlRegionImage - darkSubCtrl;
+    ctrlRegionImage = ctrlRegionImage - darkSubCtrl*cfgParams.get<double>("ImgParams.integrationTime")/1000;
 
 }
 

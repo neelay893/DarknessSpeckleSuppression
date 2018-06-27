@@ -381,7 +381,7 @@ void P3KCom::sshSendCommand(std::string sshCommand)
     else
     {
         ssh_channel_read(sshChan, buffer, sizeof(buffer), 0);
-        std::cout << buffer << std::endl;
+        //std::cout << buffer << std::endl;
         std::cout << "command applied!" << std::endl;
     
     }
