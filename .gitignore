@@ -1,0 +1,9 @@
+*bak
+*.swp
+*.o
+*.s
+*Makefile
+CMakeCache.txt
+p3kBinFiles/*
+testScripts/*
+CMakeFiles/*
