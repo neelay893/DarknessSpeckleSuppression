@@ -26,15 +26,16 @@ if __name__=='__main__':
     bPlot = True
     
     simParamDict = {'logNormMu':0.7, 'logNormSigma':0.5, 'sSigmaUniform':50, 'dt':0.001}
-    imgParamDict = {'integrationTime':0.005, 'nMkidPixPerLD':2.7, 'psfCoords':np.array([40, 60])}
-    beammapFile = 'finalMap_20170924.txt'
+    imgParamDict = {'integrationTime':0.050, 'nMkidPixPerLD':2.7, 'psfCoords':np.array([40, 30]), 'addPoissonNoise':True, 'unFlatCal':True}
+    beammapFile = '/home/neelay/SpeckleNulling/SpeckleSimulator/calFiles/finalMap_20180524.txt'
+    flatCalFile = '/home/neelay/SpeckleNulling/SpeckleSimulator/calFiles/DomeJFlat1.npz'
     controlRegionX = np.array([-20, 20])
     controlRegionY = np.array([0, 45])
 
     controlRegionX += imgParamDict['psfCoords'][0]
     controlRegionY += imgParamDict['psfCoords'][1]
 
-    speckleSim = SpeckleSim(nMkidPixPerLD=imgParamDict['nMkidPixPerLD'], beammapFile=beammapFile, dt=simParamDict['dt'])
+    speckleSim = SpeckleSim(nMkidPixPerLD=imgParamDict['nMkidPixPerLD'], beammapFile=beammapFile, flatCalFile=flatCalFile, dt=simParamDict['dt'])
 
     ## Dynamic Speckle Sim
     #speckleSim.setUniformLogNormTCorr(simParamDict['logNormMu'], simParamDict['logNormSigma'])
@@ -43,19 +44,21 @@ if __name__=='__main__':
     #speckleSim.incrementClock(5)
 
     ## Static Single Speckle Sim
-    # speckleSim.curTCorr[:] = 10000
-    # speckleSim.setUniformSSigma(0)
-    # speckleSim.createSpeckle(2*np.pi*2.407407407, 2*np.pi*14.259259, 2500, 0, 'corr')
-    # print 'Generating test speckle at ', 2.407407407, 14.259259, ' with amplitude ', 2500
-    # speckleSim.createSpeckle(2*np.pi*2.222222222, 2*np.pi*7.7777777, 2500, np.pi/2, 'corr')
+    speckleSim.curTCorr[:] = 10000
+    speckleSim.setUniformSSigma(0)
+    speckleSim.createSpeckle(2*np.pi*2.407407407, 2*np.pi*14.259259, 800, 0, 'corr')
+    print 'Generating test speckle at ', 2.407407407, 14.259259, ' with amplitude ', 2500
+    speckleSim.createSpeckle(2*np.pi*2.222222222, 2*np.pi*7.7777777, 800, np.pi/2, 'corr')
+    speckleSim.createSpeckle(2*np.pi*-4, 2*np.pi*10, 800, np.pi/2, 'corr')
 
     ## Static Speckle Field Sim
-    speckleSim.setCAmpToRadSin(20, 0.5, 0)
-    speckleSim.setUniformSSigma(50)
-    speckleSim.setStaticRawS()
+    # speckleSim.setCAmpToRadSin(20, 0.5, 0)
+    # speckleSim.setUniformSSigma(50)
+    # speckleSim.setStaticRawS()
 
 
-    image = speckleSim.getNextImage(imgParamDict['integrationTime'], imgParamDict['psfCoords'])   
+    image = speckleSim.getNextImage(imgParamDict['integrationTime'], imgParamDict['psfCoords'], imgParamDict['addPoissonNoise'], imgParamDict['unFlatCal'])
+    image2 = speckleSim.getNextImage(imgParamDict['integrationTime'], imgParamDict['psfCoords'], imgParamDict['addPoissonNoise'], False)
     saveImgFile(image)
     np.savetxt(os.path.join(imgDir, 'IMG_READY'), [])
     imgSumList = []
@@ -86,7 +89,7 @@ if __name__=='__main__':
             print 'generating speckle at', kx[i]/(2*np.pi), ky[i]/(2*np.pi), 'amplitude:', amplitudes[i], 'phase:', phases[i], speckleType[int(isFinal[i])]
         
         prevImage = image
-        image = speckleSim.getNextImage(imgParamDict['integrationTime'], imgParamDict['psfCoords'])   
+        image = speckleSim.getNextImage(imgParamDict['integrationTime'], imgParamDict['psfCoords'], imgParamDict['addPoissonNoise'], imgParamDict['unFlatCal'])
         speckleCoords = np.unravel_index(np.argmax(speckleSim.totalAmp), speckleSim.totalAmp.shape)
         saveImgFile(image)
         np.savetxt(os.path.join(imgDir, 'IMG_READY'), [])

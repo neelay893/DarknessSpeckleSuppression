@@ -23,6 +23,17 @@ P3KComFast::P3KComFast(boost::property_tree::ptree &pt)
     
     }
 
+    if(cfgParams.get<bool>("P3KParams.useTCP"))
+        initializeTCPConnection();
+
+
+}
+
+P3KComFast::P3KComFast()
+{}
+
+void P3KComFast::initializeTCPConnection()
+{
     const char *p3kIP = "198.202.125.206";
     
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -52,9 +63,6 @@ P3KComFast::P3KComFast(boost::property_tree::ptree &pt)
     printf("Socket creation success!\n");
 
 }
-
-P3KComFast::P3KComFast()
-{}
 
         
 void P3KComFast::loadNewCentoffsFromFlatmap(cv::Mat &flatmap)

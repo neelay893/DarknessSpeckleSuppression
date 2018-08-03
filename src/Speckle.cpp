@@ -257,7 +257,7 @@ void Speckle::generateSimProbeSpeckle(int phaseInd)
 
 void Speckle::generateSimFinalSpeckle()
 {
-    writeToKvecFile(kvecs, (double)(finalGain*std::sqrt(speckIntensity/cfgParams.get<double>("ImgParams.integrationTime"))*474), -1*finalPhase + M_PI, 1);
+    writeToKvecFile(kvecs, (double)(finalGain*std::sqrt(speckIntensity/cfgParams.get<double>("ImgParams.integrationTime"))*474), finalPhase + M_PI, 1);
 
 }
 

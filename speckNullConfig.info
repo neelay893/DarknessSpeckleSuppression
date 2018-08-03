@@ -12,14 +12,14 @@ ImgParams
     yCtrlEnd 40;45
 
     useBadPixMask true
-    badPixMaskFile /mnt/data0/Darkness/20180530/snBinFiles/badPixelMask20180530.img 
+    badPixMaskFile /home/neelay/SpeckleNulling/SpeckleSimulator/calFiles/finalMap_20180524.txt
     badPixFiltSize 5
     usFactor 2
 
     useFlatCal false
     flatCalFile /mnt/data0/Darkness/20171001/snBinFiles/flatWeights.bin
     
-    useDarkSub true
+    useDarkSub false
     darkSubFile /mnt/data0/Darkness/20180530/snBinFiles/darkSub.bin
 
 }
@@ -28,8 +28,9 @@ DMCal
 {
     a 0
     b 0
-    c 0.3 ;vega with bad seeing: 0.5 ;tau boo ND open:0.7 ; wl ND open: 0.3 
+    c 1 ;vega with bad seeing: 0.5 ;tau boo ND open:0.7 ; wl ND open: 0.3 
     angle -1.15257;-1.19713;-1.208;-1.232 ;-1.232 ;-1.252 ;-1.2055 ;-1.2321 ;-1.252 ;-1.216072;-70
+    yFlip 1 ; -1 at palomar
 
 }
 
@@ -87,7 +88,7 @@ P3KParams
     loadCentoffsFn dark_centoffs_sn_temp_loop5
     
     useIllumMat true
-    clampCentoffs true
+    clampCentoffs false
     clampVal 0.4
     
     flatmapMntDir /mnt/nfs/p3k/tables/hodm_map/ ;/mnt/data0/Darkness/20170928/ 
@@ -99,6 +100,7 @@ P3KParams
     influenceMatFile ./p3kBinFiles/influenceMatCold.bin
     illumMatFile ./p3kBinFiles/illumMat.bin
             
-    useSSH true
+    useSSH false
+    useTCP false
 
 }

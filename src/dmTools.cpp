@@ -7,7 +7,7 @@ cv::Point2d calculateKVecs(const cv::Point2d &coords, boost::property_tree::ptre
     intCoords.x = (double)(coords.x + cfgParams.get<int>("ImgParams.xCtrlStart"));
     intCoords.y = (double)(coords.y + cfgParams.get<int>("ImgParams.yCtrlStart"));
     kvecs.x = 2.0*M_PI*(std::cos(-dmAngle)*intCoords.x - std::sin(-dmAngle)*intCoords.y)/cfgParams.get<double>("ImgParams.lambdaOverD");
-    kvecs.y = -2.0*M_PI*(std::sin(-dmAngle)*intCoords.x + std::cos(-dmAngle)*intCoords.y)/cfgParams.get<double>("ImgParams.lambdaOverD");
+    kvecs.y = cfgParams.get<double>("DMCal.yFlip")*2.0*M_PI*(std::sin(-dmAngle)*intCoords.x + std::cos(-dmAngle)*intCoords.y)/cfgParams.get<double>("ImgParams.lambdaOverD");
     return kvecs;
 
 }
