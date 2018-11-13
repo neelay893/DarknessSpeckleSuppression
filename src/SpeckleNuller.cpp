@@ -119,7 +119,7 @@ void SpeckleNuller::exclusionZoneCut(std::vector<ImgPt> &maxImgPts)
     {
         curPt = *curElem;
         curElemRemoved = false;
-        //Check to see if any maxImgPts are too close to a speckle, but only if we're keeping all currently active speckles
+        //Check to see if curPt is too close to any speckle, but only if we're keeping all currently active speckles
         if(!cfgParams.get<bool>("TrackingParams.enforceRedetection"))
         {
             std::vector<Speckle>::iterator speckIter;
@@ -202,7 +202,7 @@ void SpeckleNuller::updateAndCutActiveSpeckles(std::vector<ImgPt> &maxImgPts)
 
         }
 
-        if(!speckFound)
+        if(!speckFound) // delete speckle from specklesList if it wasn't detected this iteration
         {
             specklesList.erase(speckIter);
             speckIter--;

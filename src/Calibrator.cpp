@@ -10,6 +10,8 @@ Calibrator::Calibrator(boost::property_tree::ptree &ptree, P3KCom *p)
     imgCenter = cv::Point2d(cfgParams.get<double>("ImgParams.xCenter"), cfgParams.get<double>("ImgParams.yCenter"));
     speckleFlatmap = cv::Mat::zeros(DM_SIZE, DM_SIZE, CV_64F);
     verbose = true;
+    trackingIter = 0;
+    imgCenterVar = cv::Mat::ones(2,1);
 
 
 }

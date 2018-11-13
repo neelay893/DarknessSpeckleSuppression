@@ -53,6 +53,8 @@ class P3KComFast
         int sockfd;
         struct sockaddr_in servaddr;
 
+        void initializeTCPConnection();
+
     public:
         /**
         * Constructor. Initializes influenceMatrix, dmActuatorMap, illumMat,

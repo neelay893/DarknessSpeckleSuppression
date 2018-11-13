@@ -2,6 +2,7 @@
 *.swp
 *.o
 *.s
+*.pyc
 *Makefile
 CMakeCache.txt
 p3kBinFiles/*
